@@ -1,0 +1,1532 @@
+/* 登录页面样式 - 基于设计图 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* 隐藏滚动条但保持滚动功能 */
+*::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+* {
+    -ms-overflow-style: none;  /* IE和Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #F5F5F5;
+    display: flex;
+    justify-content: center;
+}
+
+/* 主容器 */
+.login-wrapper {
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    position: relative;
+    background: white;
+    display: flex;            /* 使下方 .login-card 的 flex:1 生效 */
+    flex-direction: column;   /* 垂直排列：上地图、下卡片 */
+}
+
+/* 加载界面 */
+.loading-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, #FFFFFF 0%, #DBE9FC 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+    /* 注意：此处不要加 animation 兜底。
+       CSS animation 的层叠优先级高于 inline style，若用 forwards 在 N 秒后
+       隐藏本元素，会永久压住 showLoadingScreen() 的 style.display='flex'，
+       导致登录时的加载层再也显示不出来。
+       超时兜底统一由 login.html <head> 内的内联脚本负责（已验证在 HTML 解析
+       被外部 CDN 阻塞期间仍能正常触发）。 */
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.loading-icon {
+    width: 80px;
+    height: 80px;
+    animation: rotate 1.5s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 16px;
+    color: #1976D2;
+    font-weight: 500;
+}
+
+/* 登录容器 */
+.login-container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+}
+
+/* 卡片堆叠容器：承载三张可切换的卡片 */
+.card-stack {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0; /* 允许子项等高伸缩 */
+    margin-top: -24px; /* 将顶部重叠提升到容器层 */
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden; /* 限制滑入效果只在盒子内显示 */
+    transition: margin-top 0.3s ease, border-radius 0.3s ease;
+}
+
+/* 键盘弹出时卡片升到顶部 */
+.card-stack.keyboard-active {
+    margin-top: 0;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    z-index: 1000;
+}
+
+/* 通用卡片基类：用于切换动画 */
+.card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+/* 初始显示的卡片 */
+.card.show {
+    display: flex;
+}
+
+/* 隐藏的卡片不占位 */
+.card.hidden {
+    display: none;
+}
+
+/* 进入/离场动画状态 */
+.card.enter-from-right {
+    display: flex;
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+}
+.card.enter-active {
+    transform: translateX(0%);
+}
+.card.leave-to-left {
+    display: flex;
+    transform: translateX(0%);
+    transition: transform 0.28s ease;
+}
+.card.leave-active {
+    transform: translateX(-100%);
+}
+
+/* 登录头部 */
+.login-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0;
+    z-index: 10;
+}
+
+.login-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+/* 地图背景区域 */
+.map-background {
+    height: 28vh; /* 使用视口高度单位，约占屏幕28% */
+    min-height: 180px; /* 确保最小高度 */
+    max-height: 280px; /* 限制最大高度，避免在大屏幕上过高 */
+    background-image: url('../images/工地数字导航小程序切图/司机/2X/登录/背景.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 中国地图轮廓 - 已由背景图替代，无需额外装饰 */
+.map-background::before {
+    display: none;
+}
+
+/* Logo 区域 */
+.logo-section {
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-icon {
+    max-width: 150%;
+    height: auto;
+    object-fit: contain;
+}
+
+/* 首页快捷入口（原两个悬浮球改为按钮） */
+/* v1.6.21：加第 5 个按钮（📷 拍照录像）后必须换行 —— 单按钮约 110px，
+   5 个 + 间距约 590px，远超 390px 屏宽；不加 flex-wrap 会被父容器
+   .map-background { overflow: hidden } 直接裁掉（4 个按钮时其实已经溢出）。 */
+.quick-actions {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;                    /* 允许换行，避免横向被裁 */
+    justify-content: center;            /* 换行后每行居中 */
+    width: calc(100% - 24px);           /* 约束宽度才会真正触发换行 */
+    max-width: 480px;                   /* 项目统一 max-width 约定 */
+    gap: 10px;
+    z-index: 5;
+}
+
+.quick-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #237CF3;
+    border: 1px solid rgba(35, 124, 243, 0.35);
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;          /* 文字+图标始终单行，避免 iOS Safari 中文意外折行 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.quick-action-btn:hover {
+    background: #237CF3;
+    color: #fff;
+    border-color: #237CF3;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(35, 124, 243, 0.32);
+}
+
+.quick-action-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.quick-action-btn .qa-icon {
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* 通知开关按钮状态样式 */
+.quick-action-btn.qa-subscribed {
+    background: #2e7d32;
+    color: #fff;
+    border-color: #2e7d32;
+}
+.quick-action-btn.qa-subscribed:hover {
+    background: #1b5e20;
+    border-color: #1b5e20;
+    color: #fff;
+}
+.quick-action-btn.qa-denied,
+.quick-action-btn.qa-unsupported {
+    background: rgba(0, 0, 0, 0.04);
+    color: #999;
+    border-color: rgba(0, 0, 0, 0.15);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.quick-action-btn.qa-denied:hover,
+.quick-action-btn.qa-unsupported:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: #999;
+    border-color: rgba(0, 0, 0, 0.15);
+    transform: none;
+    box-shadow: none;
+}
+.quick-action-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* 「开启通知」按钮：所有模式可见（v1.4.11.9 取消 display:none）
+   · 原设计仅 PWA 模式显示，但国产 ROM 浏览器（小米 / 华为 / vivo / OPPO 等）
+     实现 PWA 时不暴露 W3C 标准 detection API（display-mode: standalone media、
+     android-app:// referrer、私有 scheme 都不命中），导致按钮永远不可见。
+   · 新策略：按钮在所有模式可见，不支持 Web Push 时由 render() 渲染「⚠️ 不支持」灰色态。
+   · 与其他 3 个快捷按钮（进场登记 / 视频监控 / 离线队列）保持产品逻辑一致。 */
+.quick-action-btn#qa-push-toggle {
+    display: inline-flex;
+}
+
+/* 小屏：标签隐藏，仅显示图标（节省空间） */
+@media (max-width: 380px) {
+    .quick-action-btn .qa-label {
+        display: none;
+    }
+    .quick-action-btn {
+        padding: 10px 12px;
+    }
+}
+
+/* 离线队列按钮 badge（v1.6.15：右上角小红点 + 数字） */
+.quick-action-btn .qa-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #ff4d4f;
+    color: #fff;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px #fff;
+    pointer-events: none;
+}
+.quick-action-btn .qa-badge[hidden] {
+    display: none;
+}
+.quick-action-btn {
+    /* 让 qa-badge 的 absolute 定位相对按钮 */
+    position: relative;
+}
+
+.app-title {
+    display: none;
+}
+
+/* 地图标记点 - 已由背景图提供，移除动画标记 */
+
+/* 登录卡片 */
+.login-card {
+    flex: 1;
+    background: transparent; /* 由容器着色与裁剪 */
+    padding: 4vh 5vw 6vh; /* 使用vh/vw单位实现自适应内边距 */
+    z-index: 3;
+    min-height: 0;
+    overflow-y: auto; /* 内容过多时允许滚动 */
+    overflow-x: hidden;
+}
+
+.secondary-btn {
+    margin-top: 12px;
+    background: #ffffff;
+    color: #1976d2;
+    border: 1px solid #cfe3fb;
+    box-shadow: 0 8px 18px rgba(25, 118, 210, 0.08);
+}
+
+.secondary-btn:active {
+    background: #f3f8fe;
+}
+
+/* 项目选择卡片（与登录卡片等高，互斥显示） */
+.project-card {
+    background: transparent;
+    padding: 4vh 5vw 6vh; /* 使用vh/vw单位，与登录卡片保持一致 */
+    z-index: 4;
+    min-height: 0;
+    overflow-y: auto; /* 内容过多时允许滚动 */
+    overflow-x: hidden;
+}
+
+/* 项目选择标题 */
+.project-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px; /* 固定间距，与轮盘紧凑 */
+    position: relative;
+}
+
+.back-arrow {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #333;
+    cursor: pointer;
+    padding: 0;
+    margin-right: 20px;
+}
+
+.project-title {
+    font-size: 18px;
+    font-weight: SemiBold;
+    color: #143662;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding-bottom: 5px; /* 与 3px 下划线之间留出 2px 间距 */
+}
+
+.project-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: #2E89FF;
+    border-radius: 2px;
+}
+
+/* 项目选择内容 */
+.project-selection {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* 项目选择确定按钮 */
+.project-selection .login-btn {
+    margin-top: 0; /* 由 picker-container 的 margin-bottom 控制间距 */
+}
+
+.picker-container {
+    display: flex;
+    gap: 0; /* 移除列间距，让两列紧挨 */
+    margin-bottom: 60px; /* 增大间距，与上方视觉距离对称 */
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 0; /* 移除左右留白，充分利用空间 */
+    width: 100%; /* 占满整个宽度 */
+    height: 200px; /* 固定高度，与 wheel-picker 一致 */
+}
+
+/* 新增：统一的遮罩层 */
+.picker-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.6) 20%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.6) 80%,
+        rgba(255, 255, 255, 0.95) 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 高亮区域：横跨整个 picker-container，与 wheel-picker 中间对齐 */
+.picker-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 40px;
+    transform: translateY(-50%);
+    background:
+        linear-gradient(to right, rgba(42, 134, 255, 0) 0%, rgba(42, 134, 255, 0.3) 15%, #2A86FF 50%, rgba(42, 134, 255, 0.3) 85%, rgba(42, 134, 255, 0) 100%) top / 100% 1px no-repeat,
+        linear-gradient(to right, rgba(42, 134, 255, 0) 0%, rgba(42, 134, 255, 0.3) 15%, #2A86FF 50%, rgba(42, 134, 255, 0.3) 85%, rgba(42, 134, 255, 0) 100%) bottom / 100% 1px no-repeat,
+        linear-gradient(to right, rgba(42, 134, 255, 0) 0%, rgba(42, 134, 255, 0.02) 20%, rgba(42, 134, 255, 0.05) 50%, rgba(42, 134, 255, 0.02) 80%, rgba(42, 134, 255, 0) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* wheel-picker 不需要自己的高亮 */
+
+
+
+.picker-wrapper {
+    flex: none; /* 不自动伸缩 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* 左侧省份列：40% */
+.picker-wrapper:first-child {
+    width: 40%;
+}
+
+/* 右侧项目列：60% */
+.picker-wrapper:last-child {
+    width: 60%;
+}
+
+.picker-label {
+    display: none;
+}
+
+/* 轮盘选择器 */
+.wheel-picker {
+    position: relative;
+    height: 200px; /* 固定高度，便于计算 */
+    background: transparent;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* 项目选择项颜色覆盖为 #143662 */
+.project-selection .picker-item {
+    color: #9CC2F5; /* 未选中项浅蓝色 */
+    font-family: "OPPO Sans 4.0", "OPPO Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 400; /* Regular */
+    font-size: 15px; /* 稍微减小字号 */
+    letter-spacing: 0.3px;
+    line-height: 1.3;
+    white-space: normal; /* 允许换行 */
+    text-align: center;
+}
+
+.project-selection .picker-item.selected {
+    color: #2A86FF; /* 选中项蓝色 */
+    font-family: "OPPO Sans 4.0", "OPPO Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 600; /* SemiBold */
+    font-size: 16px;
+    letter-spacing: 0.5px; /* 字间距 */
+    line-height: 24px; /* 行高 */
+}
+
+/* 遮罩层 (已由 .picker-container::before 替代) */
+.picker-mask {
+    display: none; /* 隐藏独立的遮罩层 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.6) 20%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.6) 80%,
+        rgba(255, 255, 255, 0.95) 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* 高亮区域 (由 .picker-container::after 统一处理) */
+.picker-highlight {
+    display: none;
+}
+
+/* 选择器列 */
+.picker-column {
+    position: relative;
+    padding: 80px 0; /* (200px - 40px) / 2 = 80px，确保选中项在中间 */
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    touch-action: none;
+    user-select: none;
+}
+
+.picker-item {
+    min-height: 40px; /* 改为最小高度，允许内容撑开 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #BDBDBD;
+    transition: all 0.3s;
+    cursor: pointer;
+    padding: 4px 8px; /* 上下也加点内边距 */
+    white-space: normal; /* 允许换行 */
+    word-break: break-all; /* 长单词也换行 */
+    text-align: center; /* 居中显示 */
+    line-height: 1.3; /* 行高 */
+}
+
+.picker-item.selected {
+    color: #143662; /* 深蓝色 */
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* 登录标签切换 */
+.login-tabs {
+    display: flex;
+    gap: 24px; /* 减小按钮间距 */
+    margin-bottom: 20px; /* 缩小与表单的间距 */
+    justify-content: center;
+    position: relative;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #237CF3 ;
+    padding: 8px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    font-weight: 500;
+    opacity: 0.6;
+}
+
+.tab-btn.active {
+    color: #1a1a1a;
+    font-weight: 600;
+    font-size: 17px;
+    opacity: 1;
+    padding-bottom: 5px; /* 与 3px 下划线之间留出 2px 间距 */
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #2E89FF;
+    border-radius: 2px;
+}
+
+/* 表单 */
+.login-form {
+    margin-bottom: 24px;
+    padding-top: 24px; /* 缩小上内边距，减小与标签的间距 */
+}
+
+/* 仅当切换到“账号密码”时，让账号/密码表单处于居中位置 */
+#account-login-form {
+    flex: 1;                 /* 占据卡片剩余高度 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 垂直居中账号/密码两行 */
+    align-items: center;     /* 水平居中 */
+    padding-top: 0;          /* 覆盖通用上内边距，避免被顶下去 */
+    margin-bottom: 0;
+}
+
+/* 确保切换为“手机号”时能真正隐藏账号密码表单（ID 选择器权重较高，这里再加一层） */
+#account-login-form.hidden {
+    display: none !important;
+}
+
+/* “确定”按钮与输入区域保持一定距离 */
+#account-login-form .login-btn {
+    margin-top: 28px;        /* 与账号/密码区拉开间距 */
+}
+
+.login-form.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.code-group {
+    display: flex;
+    gap: 12px;
+}
+
+/* 账号密码表单特殊样式 */
+.account-form-group {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 水平居中整个行 */
+    gap: 12px;
+    margin-bottom: 40px;
+    padding-bottom: 8px;
+}
+
+/* 标签靠右、宽度更小以腾出空间 */
+.account-label {
+    font-size: 18px; /* 稍微增大字体 */
+    color: #143662;
+    font-weight: regular; 
+    min-width: 56px; /* 缩小标签宽度 */
+    flex: 0 0 auto;
+    text-align: right;
+}
+
+/* 输入框窄一些且内容居中显示 */
+.account-input {
+    border: none;
+    background: transparent;
+    padding: 8px 12px;
+    font-size: 18px; 
+    color: #143662;
+    opacity: 1;
+    flex: 0 0 220px; /* 固定较窄宽度 */
+    max-width: 60%;
+    text-align: left; 
+    border-bottom: 1px solid #E0E0E0; /* 恢复账号/密码下划线 */
+}
+
+.account-input::placeholder {
+    color: #143662;
+    opacity: 0.6;
+}
+
+.account-input:focus {
+    background: transparent;
+    box-shadow: none;
+    outline: none;
+    border-bottom-color: #237CF3; /* 聚焦高亮 */
+}
+
+/* 小屏幕下进一步缩窄以适配 */
+@media (max-width: 380px) {
+    .account-label {
+        min-width: 48px;
+        font-size: 17px; /* 小屏幕下也略大一些但留出空间 */
+    }
+
+    .account-input {
+        flex: 0 0 160px;
+        font-size: 17px; /* 小屏幕适当减小为17px */
+    }
+}
+
+/* 普通表单输入框样式 */
+/* 统一移除输入框下划线 */
+.form-input {
+    width: 100%;
+    height: 50px;
+    padding: 0 16px;
+    border: none;
+    background: transparent;
+    border-bottom: none; /* 去掉下划线 */
+    border-radius: 0;
+    font-size: 15px;
+    color: #333;
+    transition: all 0.3s;
+}
+
+.form-input:focus {
+    outline: none;
+    background: transparent;
+}
+
+.form-input::placeholder {
+    color: #BDBDBD;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.code-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.code-group .form-input {
+    flex: 1;
+}
+
+/* 获取验证码按钮 */
+.get-code-btn {
+    width: auto;
+    min-width: 100px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    font-size: 14px;
+    color: #5BA8E3;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+    padding: 0 12px;
+}
+
+.get-code-btn:active {
+    opacity: 0.7;
+}
+
+.get-code-btn:disabled {
+    color: #BDBDBD;
+    cursor: not-allowed;
+}
+
+/* 登录按钮 */
+.login-btn {
+    width: 100%;
+    height: 52px;
+    border: none;
+    border-radius: 26px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 24px; /* 固定距离，确保在所有手机上可见 */
+}
+.primary-btn {
+    display: block;
+    width: 300px;           /* 更窄的固定宽度 */
+    max-width: 80%;         /* 小屏幕下自适应 */
+    margin: 0 auto;         /* 水平居中 */
+    align-self: center;     /* 在 flex 容器中也能居中 */
+    text-align: center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #72C0FF 0%, #2A86FF 100%);
+    color: #fff;
+    font-size: 18px;        /* 放大字体 */
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(114, 192, 255, 0.28);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.primary-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(114, 192, 255, 0.28);
+}
+
+.primary-btn:disabled {
+    background: #E0E0E0;
+    color: #BDBDBD;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* 其他手机号登录按钮 */
+.other-login-btn {
+    width: 100%;
+    height: auto;
+    padding: 16px;
+    background: transparent;
+    border: none;
+    color: #2A86FF;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: opacity 0.3s;
+}
+
+.other-login-btn:active {
+    opacity: 0.7;
+}
+
+/* 错误消息 */
+.error-message {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 6px;
+    background: #FFEBEE;
+    color: #D32F2F;
+    font-size: 13px;
+    text-align: center;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+    animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+}
+
+/* 车辆信息登记卡片（与登录卡片等高，互斥显示） */
+.vehicle-card {
+    background: transparent; /* 由容器着色与裁剪 */
+    padding: 30px 20px;
+    z-index: 5;
+    min-height: 0;
+}
+
+/* 车辆信息标题 */
+.vehicle-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.vehicle-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+}
+
+/* 固定车辆信息登记时，标题改为 #143662 */
+.vehicle-card.fixed .vehicle-title {
+    color: #143662;
+    padding-bottom: 5px; /* 与 3px 下划线之间留出 2px 间距 */
+}
+
+.vehicle-card.fixed .vehicle-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: #2E89FF;
+    border-radius: 2px;
+}
+
+/* 车辆信息表单 */
+.vehicle-form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* 响应式调整 - 保持视觉一致性 */
+@media (max-height: 700px) {
+    .map-background {
+        height: 25vh; /* 小屏幕减少地图高度为25% */
+        min-height: 160px;
+        max-height: 200px;
+    }
+
+    .wheel-picker {
+        height: 160px; /* 小屏幕固定高度 */
+    }
+
+    .picker-column {
+        padding: 60px 0; /* (160px - 40px) / 2 = 60px */
+    }
+
+    /* 登录卡片优化 */
+    .login-card {
+        padding: 3vh 5vw 5vh;
+        overflow-y: auto; /* 允许滚动 */
+    }
+
+    #driver-login-form .form-group {
+        margin-bottom: 2.5vh;
+    }
+
+    #driver-login-form .login-btn {
+        margin-top: 16px;
+        height: 48px;
+    }
+
+    #account-login-form .login-btn {
+        margin-top: 16px;
+        height: 48px;
+    }
+
+    .tab-buttons {
+        margin-bottom: 2.5vh;
+    }
+}
+
+@media (max-height: 600px) {
+    .map-background {
+        height: 22vh; /* 更小屏幕减少到22% */
+        min-height: 140px;
+        max-height: 180px;
+    }
+
+    .wheel-picker {
+        height: 140px; /* 更小屏幕固定高度 */
+    }
+
+    .picker-column {
+        padding: 50px 0; /* (140px - 40px) / 2 = 50px */
+    }
+
+    /* 登录卡片进一步压缩 */
+    .login-card {
+        padding: 2vh 5vw 4vh;
+        overflow-y: auto; /* 允许滚动 */
+    }
+
+    #driver-login-form .form-group {
+        margin-bottom: 2vh;
+    }
+
+    #driver-login-form .login-btn {
+        margin-top: 12px;
+        height: 44px;
+        font-size: 15px;
+    }
+
+    #account-login-form .login-btn {
+        margin-top: 12px;
+        height: 44px;
+        font-size: 15px;
+    }
+
+    .tab-buttons {
+        margin-bottom: 2vh;
+    }
+
+    .tab-btn {
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .form-input {
+        height: 44px;
+        font-size: 14px;
+    }
+}
+
+/* 极小屏幕高度优化 */
+@media (max-height: 500px) {
+    .map-background {
+        height: 20vh; /* 极小屏幕减少到20% */
+        min-height: 120px;
+        max-height: 140px;
+    }
+
+    .wheel-picker {
+        height: 120px; /* 极小屏幕固定高度 */
+    }
+
+    .picker-column {
+        padding: 40px 0; /* (120px - 40px) / 2 = 40px */
+    }
+
+    .login-card {
+        padding: 1.5vh 5vw 3vh;
+        overflow-y: auto;
+    }
+
+    #driver-login-form .form-group {
+        margin-bottom: 1.5vh;
+    }
+
+    #driver-login-form .login-btn {
+        margin-top: 10px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    #account-login-form .login-btn {
+        margin-top: 10px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .tab-buttons {
+        margin-bottom: 1.5vh;
+    }
+
+    .tab-btn {
+        height: 36px;
+        font-size: 13px;
+        padding: 0 16px;
+    }
+
+    .form-input {
+        height: 40px;
+        font-size: 13px;
+    }
+
+    .form-label {
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .remember-option {
+        margin-top: 1vh;
+    }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 360px) {
+    .picker-item {
+        font-size: 13px;
+        padding: 0 2px;
+    }
+    
+    .picker-item.selected {
+        font-size: 16px;
+    }
+}
+
+/* --- 账号/密码输入下划线强制显示（避免被 .form-input 通用规则覆盖） --- */
+.account-form-group .account-input {
+    border-bottom: 1px solid #E0E0E0 !important;
+}
+.account-form-group .account-input:focus {
+    border-bottom-color: #237CF3 !important;
+}
+
+/* ==================== 司机登录新增样式 ==================== */
+
+/* 必填标记（红色星号），始终显示 */
+.required-mark {
+    color: #FF4444;
+    font-size: 16px;
+    margin-left: 4px;
+    flex: 0 0 auto;
+}
+
+
+/* 提示消息（显示未填写的字段） */
+.hint-message {
+    font-size: 13px;
+    color: #F47160;
+    text-align: center;
+    margin-top: -10px;
+    margin-bottom: 20px;
+    opacity: 1;
+    transition: opacity 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.hint-message::before {
+    content: 'i';
+    font-size: 12px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid #F47160;
+    background: transparent;
+    color: #F47160;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: serif;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.hint-message.show {
+    opacity: 1;
+}
+
+.hint-message.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* 记住选项（下次登录自动填写 / 记住密码） */
+.remember-option {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+/* 管理员登录的记住密码选项组 */
+.remember-form-group {
+    margin-bottom: 20px;
+}
+
+.remember-form-group .remember-option {
+    flex: 0 0 220px;
+    max-width: 60%;
+}
+
+/* 圆形复选框样式 */
+.remember-checkbox {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #2E89FF;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.remember-checkbox:checked {
+    background-color: #2E89FF;
+    border-color: #2E89FF;
+}
+
+.remember-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: white;
+}
+
+.remember-option label {
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* 调整司机登录表单的布局 */
+#driver-login-form .form-group {
+    margin-bottom: 28px;
+}
+
+#driver-login-form .login-btn {
+    margin-top: 8px; /* 配合hint-message的margin-bottom，总间距与输入框一致 */
+}
+
+#driver-login-form .remember-option {
+    justify-content: center;
+    margin-top: 16px;
+}
+
+/* iPhone SE 及类似小屏幕优化（375x667等） */
+@media (max-width: 400px) and (max-height: 700px) {
+    .map-background {
+        height: 24vh; /* 减少地图高度，给表单更多空间 */
+        min-height: 140px;
+        max-height: 180px;
+    }
+
+    .login-card {
+        padding: 2.5vh 5vw 4vh;
+        overflow-y: auto;
+    }
+
+    /* 标签栏 */
+    .tab-buttons {
+        margin-bottom: 2vh;
+        gap: 16px;
+    }
+
+    .tab-btn {
+        height: 38px;
+        font-size: 14px;
+        padding: 0 20px;
+    }
+
+    /* 司机登录表单紧凑布局 */
+    #driver-login-form .form-group {
+        margin-bottom: 2.5vh; /* 从28px减到2.5vh */
+    }
+
+    #driver-login-form .input-row {
+        padding: 10px 0;
+        gap: 10px;
+    }
+
+    #driver-login-form .form-label {
+        font-size: 14px;
+        min-width: 60px;
+    }
+
+    #driver-login-form .form-input {
+        height: 40px;
+        font-size: 14px;
+    }
+
+    #driver-login-form .login-btn {
+        margin-top: 16px; /* 固定距离 */
+        height: 46px;
+        font-size: 15px;
+    }
+
+    #driver-login-form .remember-option {
+        margin-top: 1.5vh; /* 从16px改为1.5vh */
+        font-size: 13px;
+    }
+
+    #driver-login-form .hint-message {
+        font-size: 12px;
+        margin-top: 8px; /* 改为正值，避免被覆盖 */
+        margin-bottom: 1.5vh;
+    }
+
+    #driver-login-form .error-message {
+        font-size: 12px;
+        margin-top: 10px;
+    }
+
+    /* 账号密码登录也优化 */
+    #account-login-form .account-form-group {
+        margin-bottom: 2.5vh;
+    }
+
+    #account-login-form .login-btn {
+        height: 46px;
+        font-size: 15px;
+    }
+}
+
+/* 调整管理员登录表单的按钮位置 */
+#admin-login-form .login-btn {
+    margin-top: 0;
+}
+
+
+/* ==========================================================================
+   2026-01-26 更新样式 (User Requested Changes)
+   ========================================================================== */
+
+/* (1) Checkbox Icon Modification - Circular with blue ring, white gap, blue center */
+.remember-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #237CF3; /* 外圈蓝色边框 */
+    border-radius: 50%; /* 圆形 */
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    background-color: #fff; /* 白色背景 */
+    vertical-align: middle;
+    margin-right: 6px;
+    transition: all 0.2s;
+}
+
+/* 未选中状态：只有蓝色边框，内部白色 */
+.remember-checkbox:not(:checked) {
+    background-color: #fff;
+}
+
+/* 选中状态：蓝色边框 + 白色间隙 + 蓝色圆心 */
+.remember-checkbox:checked {
+    border-color: #237CF3;
+    background-color: #fff; /* 保持白色背景作为间隙 */
+}
+
+.remember-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px; /* 蓝色圆心更大，白间隙更小 */
+    height: 12px;
+    background-color: #237CF3;
+    border-radius: 50%;
+}
+
+/* (2) Reduce Spacing - Admin Password to Remember Me */
+#admin-login-form .account-form-group:nth-of-type(2) {
+    margin-bottom: 12px !important; /* Force tighter spacing */
+    padding-bottom: 0;
+}
+
+/* (3) Password Visibility Toggle & Admin Input Styling */
+/* Apply the "Box" style to Admin Username as well */
+#admin-login-form #username {
+    background: rgba(35, 124, 243, 0.05); /* Box Background */
+    border-radius: 8px;
+    border-bottom: none !important;
+    padding: 10px 12px;
+    height: 44px;
+    box-shadow: none;
+    color: #333;
+}
+#admin-login-form #username:focus {
+    /* Optional: Focus ring or color change if needed */
+}
+
+/* Adjust wrapper to match "Box" style (replacing underline style) */
+.password-input-wrapper {
+    position: relative;
+    flex: 0 0 220px;
+    max-width: 60%;
+    display: flex;
+    align-items: center;
+    
+    /* Box Style */
+    background: rgba(35, 124, 243, 0.05);
+    border-radius: 8px;
+    border-bottom: none !important; /* No underline */
+    
+    padding: 0 35px 0 12px; /* Pad right for icon, left for text */
+    height: 44px;
+}
+
+/* Focus state for wrapper */
+.password-input-wrapper:focus-within {
+    /* Optional: different focus style */
+}
+
+/* Input inside wrapper */
+.password-input-wrapper .account-input {
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
+    border-bottom: none !important;
+    padding: 0; /* Remove padding, wrapper handles it */
+    margin-bottom: 0; /* No margin inside */
+    background: transparent !important; /* Ensure input is transparent so wrapper bg shows */
+    height: 100%;
+    box-shadow: none;
+}
+
+#togglePassword {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#togglePassword svg {
+    color: #2A86FF; /* 蓝色 */
+    stroke: #2A86FF;
+}
+
+/* 隐藏斜线（显示密码时） */
+#togglePassword.showing .eye-closed {
+    display: none !important;
+}
+#togglePassword.showing .eye-open {
+    display: block !important;
+}
+#togglePassword:not(.showing) .eye-closed {
+    display: block;
+}
+#togglePassword:not(.showing) .eye-open {
+    display: none;
+}
+
+/* (4) Driver Login Input Styling */
+/* Override specific inputs in driver form */
+#driver-login-form .account-input {
+    background: rgba(35, 124, 243, 0.05);
+    border-radius: 8px;
+    border-bottom: none !important;
+    padding: 10px 12px;
+    height: 44px;
+    box-shadow: none;
+    color: #143662;
+}
+
+/* Placeholder color specific for driver inputs */
+#driver-login-form .account-input::placeholder {
+    color: rgba(13, 121, 210, 0.3); /* #0D79D2 30%*/
+}
+
+/* Because we removed border-bottom from account-input generally for driver, 
+   we might need to ensure layout is still good. 
+   The wrapper .account-form-group handles alignment.
+*/
+#driver-login-form .account-form-group {
+    /* Ensure items center vertically */
+    align-items: center;
+}
+
+/* 车牌号输入组合样式 */
+.plate-input-wrapper {
+    display: flex !important;
+    align-items: center;
+    gap: 0;
+    padding: 0 !important;
+    overflow: hidden;
+}
+
+.plate-province-select {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: rgba(13, 121, 210, 0.7);
+    padding: 10px 4px 10px 12px;
+    cursor: pointer;
+    outline: none;
+    appearance: auto;
+    -webkit-appearance: auto;
+    flex: 0 0 auto;
+    height: 44px;
+}
+
+.plate-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(13, 121, 210, 0.2);
+    flex: 0 0 1px;
+}
+
+.plate-number-input {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    color: #143662;
+    padding: 10px 12px;
+    flex: 1;
+    min-width: 0;
+    outline: none;
+    height: 44px;
+}
+
+.plate-number-input::placeholder {
+    color: rgba(13, 121, 210, 0.3);
+}

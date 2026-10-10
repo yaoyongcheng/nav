@@ -1,0 +1,331 @@
+/* ===== 视频悬浮球（左下角，与表单悬浮球对称） ===== */
+.fv-ball {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  z-index: 9997;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f44336, #d32f2f);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  touch-action: none;
+}
+.fv-ball:active { transform: scale(0.92); }
+.fv-ball.fv-dragging {
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 0 10px 24px rgba(244, 67, 54, 0.5);
+}
+.fv-ball.fv-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(244, 67, 54, 0.4);
+  animation: fv-pulse-anim 2s infinite;
+}
+@keyframes fv-pulse-anim {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ===== 视频播放器全屏容器 ===== */
+.fv-player-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* PWA standalone + viewport-fit=cover 时需要预留状态栏 / home indicator 安全区 */
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  opacity: 0;
+  animation: fv-fade-in 0.25s forwards;
+}
+.fv-player-root.fv-hiding {
+  animation: fv-fade-out 0.2s forwards;
+}
+@keyframes fv-fade-in { to { opacity: 1; } }
+@keyframes fv-fade-out { to { opacity: 0; } }
+
+/* ===== 播放器头部 ===== */
+.fv-player-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 关键：iOS PWA standalone 下 black-translucent 状态栏会拦截触摸事件，
+     必须用 safe-area-inset-top 把控件下移到状态栏下方 */
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding-left: calc(18px + env(safe-area-inset-left, 0px));
+  padding-right: calc(18px + env(safe-area-inset-right, 0px));
+  padding-bottom: 14px;
+  color: #fff;
+  font-size: 13px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6), transparent);
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.25s ease;
+}
+.fv-controls-hidden .fv-player-header { opacity: 0; pointer-events: none; }
+
+.fv-player-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.fv-player-title .fv-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f44336;
+  animation: fv-blink 1.4s infinite;
+}
+@keyframes fv-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* 顶部右侧操作组（全屏 + 关闭） */
+.fv-player-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fv-action-btn {
+  pointer-events: auto;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+.fv-action-btn:hover { background: rgba(255, 255, 255, 0.3); }
+.fv-action-btn:active { transform: scale(0.92); }
+.fv-action-btn svg { display: block; }
+
+/* 全屏激活态 */
+.fv-fullscreen.fv-fs-active {
+  background: #2b7fff;
+}
+.fv-fullscreen.fv-fs-active:hover { background: #1e6fe6; }
+
+/* 兼容：保留 .fv-close 直接使用 .fv-action-btn 样式 */
+.fv-close { composes: fv-action-btn; }
+
+/* ===== 视频主区域 ===== */
+.fv-video-wrap {
+  width: 100%;
+  max-width: 960px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fv-video-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+.fv-video-box video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+/* ===== 自定义底部控件条 ===== */
+/* 绕开 iOS PWA native 全屏接管；自动隐藏动画 */
+.fv-controls {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  /* 避开 iPhone 底部 home indicator（小横条） */
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 13px;
+  z-index: 3;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.fv-controls-hidden .fv-controls {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+.fv-play-btn,
+.fv-mute-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  transition: background 0.15s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.fv-play-btn:hover,
+.fv-mute-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.fv-play-btn:active,
+.fv-mute-btn:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.28); }
+.fv-play-btn svg,
+.fv-mute-btn svg { display: block; pointer-events: none; }
+
+.fv-time {
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.92);
+  min-width: 44px;
+  letter-spacing: 0.5px;
+}
+
+.fv-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  margin-left: auto;
+  background: rgba(244, 67, 54, 0.22);
+  border: 1px solid rgba(244, 67, 54, 0.5);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #ffcdd2;
+  line-height: 1;
+}
+.fv-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f44336;
+  box-shadow: 0 0 6px rgba(244, 67, 54, 0.6);
+  animation: fv-blink 1.4s infinite;
+}
+
+/* 暂停时控件强制常驻（覆盖 .fv-controls-hidden） */
+.fv-player-root[data-state="paused"] .fv-controls,
+.fv-player-root.fv-paused .fv-controls {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+}
+
+/* ===== 加载/错误状态 ===== */
+.fv-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+.fv-status.fv-hidden { display: none; }
+.fv-status .fv-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #f44336;
+  border-radius: 50%;
+  animation: fv-spin 1s linear infinite;
+}
+@keyframes fv-spin {
+  to { transform: rotate(360deg); }
+}
+.fv-status-error .fv-icon { font-size: 32px; }
+.fv-status-error .fv-msg { color: #ffcdd2; max-width: 360px; line-height: 1.5; }
+.fv-status-error .fv-msg strong { color: #fff; font-size: 15px; }
+.fv-status-error .fv-btn-retry:active { transform: scale(0.95); }
+
+/* ===== 视频源说明 ===== */
+.fv-source {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+  word-break: break-all;
+  padding: 0 8px;
+}
+
+/* ===== 小屏适配 ===== */
+@media (max-width: 480px) {
+  .fv-ball {
+    bottom: 70px;
+    left: 12px;
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+  }
+  .fv-player-header {
+    /* 小屏：缩小字号，但保留 safe-area padding 以兼容 iPhone 刘海/PWA standalone */
+    padding: calc(12px + env(safe-area-inset-top, 0px))
+              calc(14px + env(safe-area-inset-right, 0px))
+              12px
+              calc(14px + env(safe-area-inset-left, 0px));
+    font-size: 12px;
+  }
+  .fv-controls {
+    /* 小屏底部控件也保留 home indicator 安全区 */
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}

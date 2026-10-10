@@ -1,0 +1,80 @@
+{
+  "name": "工地数字导航",
+  "short_name": "工地导航",
+  "description": "工地数字导航系统，支持司机端与管理端登录",
+  "start_url": "./login.html",
+  "scope": "./",
+  "id": "./login.html",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "portrait",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "categories": ["navigation", "productivity", "business"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "立即登录",
+      "short_name": "登录",
+      "description": "直接进入登录页面（点此自动标记已安装,不再弹安装指引）",
+      "url": "./login.html?from=homescreen",
+      "icons": [
+        {
+          "src": "./icons/shortcut-login.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "管理后台",
+      "short_name": "管理",
+      "description": "管理员登录入口（点此自动标记已安装）",
+      "url": "./admin_index.html?from=homescreen",
+      "icons": [
+        {
+          "src": "./icons/shortcut-login.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "工地数字导航"
+    }
+  ]
+}

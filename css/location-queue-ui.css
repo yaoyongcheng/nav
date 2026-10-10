@@ -1,0 +1,184 @@
+/* 离线队列 UI（v1.6.16 从 index.html 抽出，v1.6.18 iOS PWA 关闭修复）*/
+
+/* 弹窗 + 卡片 + 列表 + 按钮（v1.6.11 原版 + 微调）*/
+#location-queue-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, .55);  /* v1.6.18：加重遮罩，避免 iOS 点透 */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;  /* v1.6.18：iOS 点击高亮移除 */
+    touch-action: manipulation;
+}
+#location-queue-modal.show {
+    display: flex;
+}
+#location-queue-modal .lqm-card {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 400px;
+    width: calc(100vw - 32px);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .2);
+    overflow: hidden;
+    /* v1.6.18：iOS 下滑手势关闭支持 */
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+}
+#location-queue-modal .lqm-header {
+    padding: 16px;
+    border-bottom: 1px solid #e9edf3;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#location-queue-modal .lqm-status {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #666;
+    background: #f5f7fa;
+    border-bottom: 1px solid #e9edf3;
+}
+#location-queue-modal .lqm-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    min-height: 120px;
+}
+#location-queue-modal .lqm-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f2f5;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.5;
+}
+#location-queue-modal .lqm-item:last-child { border-bottom: none; }
+#location-queue-modal .lqm-item .plate {
+    font-weight: 600;
+    color: #1976d2;
+}
+#location-queue-modal .lqm-item .retry {
+    color: #fa8c16;
+    font-size: 12px;
+    margin-left: 8px;
+}
+#location-queue-modal .lqm-item .coords {
+    color: #888;
+    font-size: 12px;
+    font-family: monospace;
+}
+#location-queue-modal .lqm-empty {
+    padding: 40px 16px;
+    text-align: center;
+    color: #52c41a;
+    font-size: 14px;
+}
+#location-queue-modal .lqm-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #e9edf3;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+#location-queue-modal .lqm-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+#location-queue-modal .lqm-btn:hover {
+    border-color: #1976d2;
+    color: #1976d2;
+}
+#location-queue-modal .lqm-btn.primary {
+    background: #1976d2;
+    color: #fff;
+    border-color: #1976d2;
+}
+#location-queue-modal .lqm-btn.primary:hover {
+    background: #1565c0;
+    border-color: #1565c0;
+    color: #fff;
+}
+#location-queue-modal .lqm-btn.danger {
+    color: #ff4d4f;
+    border-color: #ff4d4f;
+}
+#location-queue-modal .lqm-btn.danger:hover {
+    background: #ff4d4f;
+    color: #fff;
+    border-color: #ff4d4f;
+}
+
+/* 分 Tab 多业务展示（v1.6.13 新增）*/
+#location-queue-modal .lqm-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 12px;
+    border-bottom: 1px solid #e9edf3;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: #fafbfc;
+}
+#location-queue-modal .lqm-tab {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #666;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s ease;
+}
+#location-queue-modal .lqm-tab.active {
+    color: #1976d2;
+    border-bottom-color: #1976d2;
+    font-weight: 600;
+}
+#location-queue-modal .lqm-tab-num {
+    display: inline-block;
+    min-width: 18px;
+    padding: 0 5px;
+    height: 16px;
+    line-height: 16px;
+    background: #e9edf3;
+    color: #666;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 4px;
+    text-align: center;
+}
+#location-queue-modal .lqm-tab.active .lqm-tab-num {
+    background: #1976d2;
+    color: #fff;
+}
+#location-queue-modal .lqm-item-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: #888;
+    background: #f5f7fa;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+#location-queue-modal .lqm-ios-tip {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #fa8c16;
+    background: #fff7e6;
+    border-top: 1px solid #ffe7ba;
+    text-align: center;
+}

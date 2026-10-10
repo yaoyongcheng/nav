@@ -1,0 +1,641 @@
+/* 管理员界面样式 */
+
+/* 隐藏滚动条但保持滚动功能 */
+*::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+* {
+    -ms-overflow-style: none;  /* IE和Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+.admin-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 顶部筛选栏 */
+.admin-filter-bar {
+    position: absolute;
+    top: 80px;
+    left: 16px;
+    right: 16px;
+    z-index: 100;
+    display: none;
+    gap: 8px;
+}
+
+.filter-item {
+    flex: 1;
+    background: white;
+    border-radius: 20px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-item:active {
+    transform: scale(0.98);
+    background: #f5f5f5;
+}
+
+.filter-item span {
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+}
+
+.filter-item i {
+    font-size: 10px;
+    color: #999;
+}
+
+/* 右侧控制按钮 */
+.admin-map-controls {
+    position: absolute;
+    bottom: 170px; /* 50px(浏览器工具栏) + 76px(导航栏) + 44px(间距) */
+    right: 16px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 工地监控页面的按钮位置（靠近底部导航栏） */
+.admin-map-controls.admin-data-controls {
+    bottom: 130px;
+}
+
+/* 切换按钮特殊样式（图标+文字） */
+.admin-control-btn.mode-toggle-btn-style {
+    width: auto;
+    height: auto;
+    padding: 8px 12px;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.admin-control-btn.mode-toggle-btn-style img.rotate-90 {
+    transform: rotate(90deg);
+    width: 20px;
+    height: 20px;
+}
+
+.admin-control-btn .btn-label {
+    font-size: 10px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.admin-control-btn {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.admin-control-btn img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.admin-control-btn i {
+    font-size: 20px;
+    color: #666;
+}
+
+.admin-control-btn:active {
+    transform: scale(0.95);
+}
+
+.admin-control-btn.active {
+    background: #1890ff;
+}
+
+.admin-control-btn.active i {
+    color: white;
+}
+
+.admin-control-btn.active img {
+    filter: brightness(0) invert(1);
+}
+
+/* 车辆图例 */
+.vehicle-legend {
+    position: absolute;
+    bottom: 130px;
+    left: 16px;
+    right: auto;
+    z-index: 200;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 3px;
+    box-shadow: 0px 0px 4px 0px rgba(13, 121, 210, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 120px;
+}
+
+.legend-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: rgba(42, 134, 255, 0.1); /* 默认选中状态 */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 114px;
+    height: 29px;
+    box-sizing: border-box;
+}
+
+.legend-item:hover {
+    background: rgba(42, 134, 255, 0.15);
+}
+
+.legend-item:active {
+    transform: scale(0.98);
+}
+
+.legend-item img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    transform: rotate(-90deg);
+}
+
+.legend-item span {
+    font-size: 12px;
+    color: #333;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+/* 管理员底部导航 */
+.admin-nav {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    z-index: 300;
+    padding-bottom: 8px;
+}
+
+.admin-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.admin-nav .nav-icon-img {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+}
+
+.admin-nav .nav-text {
+    font-size: 11px;
+    color: #143662;
+}
+
+.admin-nav .nav-item.active .nav-text {
+    color: #2A86FF;
+}
+
+/* 地图容器调整 */
+.admin-container #map-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* 管理员底部卡片 */
+.admin-bottom-card {
+    position: absolute;
+    bottom: 126px; /* 与司机端保持一致 */
+    left: 0;
+    right: 0;
+    background: linear-gradient(to bottom, #FFFFFF 0%, #DBE9FC 100%);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
+    z-index: 150;
+    transition: transform 0.3s ease;
+    transform: translateY(calc(100% - 40px));
+}
+
+.admin-bottom-card.expanded {
+    transform: translateY(0);
+}
+
+/* 卡片拖动条 */
+.card-handle {
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.handle-bar {
+    width: 40px;
+    height: 4px;
+    background: #1890ff;
+    border-radius: 2px;
+}
+
+/* 右侧按钮组在卡片展开时上移 */
+.admin-map-controls.card-expanded {
+    bottom: 330px;
+}
+
+.vehicle-legend.card-expanded {
+    bottom: 330px;
+}
+
+.admin-vehicle-detail-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    z-index: 260;
+    display: none;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.3s;
+}
+
+.admin-vehicle-detail-sheet.visible {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.admin-vehicle-detail-panel {
+    width: 100%;
+    height: 50vh;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 24px rgba(13, 121, 210, 0.18);
+    padding: 0 16px 20px;
+    animation: adminDetailSlideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+@keyframes adminDetailSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(50vh);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.admin-vehicle-detail-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 0 10px;
+    flex-shrink: 0;
+}
+
+.admin-vehicle-detail-close {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f0f0f0;
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.admin-vehicle-detail-close:active {
+    background: #e0e0e0;
+}
+
+.admin-vehicle-detail-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #143662;
+}
+
+.admin-vehicle-detail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    flex: 1;
+    padding-top: 4px;
+}
+
+.admin-detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.admin-detail-label {
+    flex-shrink: 0;
+    color: #143662;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.admin-detail-value {
+    flex: 1;
+    min-height: 30px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    background: #eaf3ff;
+    color: #143662;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    text-align: right;
+    word-break: break-all;
+}
+
+.admin-detail-section-gap {
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.admin-detail-value.admin-detail-status {
+    background: #eaf3ff;
+    justify-content: center;
+}
+
+.admin-detail-value.status-ongoing {
+    background: #e0f5ea;
+    color: #17b26a;
+}
+
+.admin-detail-value.status-overdue {
+    background: #ffe9e8;
+    color: #ef4444;
+}
+
+.admin-detail-value.status-completed,
+.admin-detail-value.status-default {
+    background: #eaf3ff;
+    color: #2a86ff;
+}
+
+/* 响应式调整 */
+@media (max-width: 375px) {
+    .admin-filter-bar {
+        gap: 6px;
+    }
+    
+    .filter-item {
+        padding: 6px 10px;
+    }
+    
+    .filter-item span {
+        font-size: 12px;
+    }
+    
+    .vehicle-legend {
+        padding: 10px;
+        gap: 10px;
+    }
+    
+    .legend-item img {
+        width: 28px;
+        height: 28px;
+    }
+
+    .admin-detail-label {
+        font-size: 13px;
+    }
+
+    .admin-detail-value {
+        font-size: 13px;
+        padding: 5px 10px;
+    }
+
+    .admin-detail-section-gap {
+        height: 12px;
+    }
+}
+
+
+/* 管理员我的页面 - 功能菜单 */
+.menu-list {
+    margin: 20px 15px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.menu-item:active {
+    background: #f5f5f5;
+    transform: scale(0.98);
+}
+
+.menu-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    margin-right: 12px;
+}
+
+.menu-text {
+    flex: 1;
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+}
+
+.menu-badge {
+    background: #ff4d4f;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* 消息中心徽标 */
+.message-badge {
+    background: #ff4d4f;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 8px;
+    min-width: 20px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-arrow {
+    color: #999;
+    font-size: 14px;
+}
+
+
+/* 管理员信息卡片调整 */
+.admin-card {
+    height: 126px;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+/* 切换项目卡片 */
+.switch-project-section {
+    margin: 30px 15px;
+}
+
+.switch-project,
+.message-center {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    background: #EFF5FF;
+    border-radius: 10px;
+    box-shadow: 0px 0px 4px 0px rgba(13,121,210,0.3);
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-bottom: 12px;
+}
+
+.switch-project:last-child,
+.message-center:last-child {
+    margin-bottom: 0;
+}
+
+.switch-project .menu-icon,
+.message-center .menu-icon {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    margin-right: 10px;
+}
+
+.switch-project .menu-text,
+.message-center .menu-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+    flex: 1;
+}
+
+.switch-project .label,
+.message-center .label {
+    font-size: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.switch-project .project-name {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.switch-project .menu-arrow,
+.message-center .menu-arrow {
+    margin-left: auto;
+    color: #999;
+    font-size: 14px;
+}
+
+.switch-project:active,
+.message-center:active {
+    transform: scale(0.995);
+}
+
+@media (max-width: 375px) {
+    .switch-project .menu-icon,
+    .message-center .menu-icon {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+.admin-card .card-background {
+    width: auto;
+    height: 90%;
+    object-fit: contain;
+    position: absolute;
+    right: 10px;
+    bottom: 5px;
+    top: auto;
+    left: auto;
+    z-index: 1;
+    opacity: 1;
+}
+
+
+/* 管理员卡片内容居中 */
+.admin-card .driver-info {
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.admin-card .driver-details {
+    padding-top: 0;
+}
+
+.admin-card .driver-name {
+    margin: 0;
+}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>管理员 - 工地监控</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="js/amap-loader.js"></script>
+</head>
+<body>
+    <div class="container admin-container">
+        <!-- 地图容器 -->
+        <div id="map-container"></div>
+
+        <!-- 搜索区域（复用司机端样式） -->
+        <div class="search-container">
+            <div class="search-box">
+                <img src="images/工地数字导航小程序切图/司机/2X/导航/搜索.png" class="search-icon-img" alt="搜索">
+                <input type="text" placeholder="输入文字搜索设备" id="search-input" readonly>
+            </div>
+            <div class="search-results" id="search-results">
+                <!-- 搜索结果将动态填充 -->
+            </div>
+        </div>
+
+        <!-- 顶部筛选栏（默认隐藏） -->
+        <div class="admin-filter-bar" style="display: none;">
+            <div class="filter-item">
+                <span>任务类型</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="filter-item">
+                <span>任务状态</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="filter-item">
+                <span>车辆</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+
+        <!-- 右侧控制按钮（靠近底部导航栏） -->
+        <div class="admin-map-controls admin-data-controls">
+            <button class="admin-control-btn" id="locate-btn" title="定位">
+                <img src="images/工地数字导航小程序切图/司机/2X/导航/定位.png" alt="定位">
+            </button>
+        </div>
+
+        <!-- 车辆图例（默认显示，车辆模式） -->
+        <div class="vehicle-legend" id="vehicle-legend">
+            <div class="legend-item">
+                <img src="images/工地数字导航小程序切图/管理/2X/运输管理/临时车.png" alt="临时车">
+                <span>临时车辆(1)</span>
+            </div>
+            <div class="legend-item">
+                <img src="images/工地数字导航小程序切图/管理/2X/运输管理/固定车.png" alt="固定车">
+                <span>固定车辆(2)</span>
+            </div>
+        </div>
+
+        <div class="admin-vehicle-detail-sheet" id="admin-vehicle-detail-sheet">
+            <div class="admin-vehicle-detail-panel">
+                <div class="admin-vehicle-detail-header">
+                    <div class="admin-vehicle-detail-title">详细信息</div>
+                    <button type="button" class="admin-vehicle-detail-close" id="admin-vehicle-detail-close" aria-label="关闭详情">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="admin-vehicle-detail-body">
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">车辆类型</div>
+                        <div class="admin-detail-value" id="admin-detail-vehicle-type">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">任务类型</div>
+                        <div class="admin-detail-value" id="admin-detail-task-type">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">车牌号</div>
+                        <div class="admin-detail-value" id="admin-detail-plate-number">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">定位器</div>
+                        <div class="admin-detail-value" id="admin-detail-locator">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">司机姓名</div>
+                        <div class="admin-detail-value" id="admin-detail-driver-name">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">手机号</div>
+                        <div class="admin-detail-value" id="admin-detail-phone">无</div>
+                    </div>
+                    <div class="admin-detail-section-gap"></div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">离场时间</div>
+                        <div class="admin-detail-value" id="admin-detail-exit-time">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">入场时间</div>
+                        <div class="admin-detail-value" id="admin-detail-entry-time">无</div>
+                    </div>
+                    <div class="admin-detail-row">
+                        <div class="admin-detail-label">任务状态</div>
+                        <div class="admin-detail-value admin-detail-status" id="admin-detail-task-status">无</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="bottom-nav admin-nav">
+            <div class="nav-item" data-page="admin-navigation">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-up.png"
+                     alt="导航">
+                <div class="nav-text">导航</div>
+            </div>
+            <div class="nav-item active" data-page="admin-data">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/导航/监控-down.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/导航/监控-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/导航/监控-up.png"
+                     alt="工地监控">
+                <div class="nav-text">工地监控</div>
+            </div>
+            <div class="nav-item" data-page="admin-transport">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-up.png"
+                     alt="运输管理">
+                <div class="nav-text">运输管理</div>
+            </div>
+            <div class="nav-item" data-page="admin-profile">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png"
+                     alt="我的">
+                <div class="nav-text">我的</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/flv.min.js"></script>
+    <script src="js/hls.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/coordinate-convert.js"></script>
+    <script src="js/segment-splitter.js"></script>
+    <script src="js/point-name-utils.js"></script>
+    <script src="js/map/base-map-renderer.js"></script>
+    <script src="js/kml-handler.js"></script>
+    <script src="js/api-data-converter.js"></script>
+    <script src="js/enhanced-highlight.js"></script>
+    <script src="js/browser-toolbar-detect.js"></script>
+    <script src="js/ui-utils.js"></script>
+    <script src="js/driver-road-status.js"></script>
+    <script src="js/admin-message-manager.js"></script>
+    <script src="js/admin-alarm-event-center.js"></script>
+    <script src="js/admin-websocket.js"></script>
+    <script src="js/admin-nav-badge.js"></script>
+    <script src="js/admin-fence-manager.js"></script>
+    <script src="js/admin-vehicle-manager.js"></script>
+    <script src="js/admin-alert-manager.js"></script>
+    <script src="js/admin-road-status-sync.js"></script>
+    <script src="js/admin_index.js"></script>
+</body>
+</html>

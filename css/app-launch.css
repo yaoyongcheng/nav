@@ -1,0 +1,313 @@
+/*
+ * main-9.4 / 外部 App 唤起浮层（地图导航 / 应用商店）
+ * ============================================
+ * 独立 CSS，不污染 css/login.css / css/style.css。
+ * 结构与规范沿用 css/camera-capture.css（该文件头部即项目浮层规范），要点：
+ *
+ *  - 不用 100vh（iOS Safari 高度 bug），用 max-height: 80vh
+ *  - safe-area-inset-bottom 给内部容器，视觉中心不偏移
+ *  - 关闭走 display: none，彻底移出命中测试
+ *  - 浮层自身 transform 做滑入，不引入 rAF 循环
+ *  - 兼容 prefers-reduced-motion（关闭过渡动画）
+ *
+ * ⚠️ z-index 层级链（新加浮层时必须排在这条链上，勿插队）：
+ *    location-queue-ui 9999 < pwa-install 9999/10000
+ *      < camera-capture 10001/10002 < **app-launch 10004/10005** < app-launch toast 10006
+ */
+
+/* ============ 遮罩 / 抽屉 ============ */
+
+.al-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 10004;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.al-mask.is-open {
+    display: block;
+    animation: al-fade-in 200ms ease-out;
+}
+
+.al-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    color: #1e293b;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+    z-index: 10005;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    max-height: 80vh;
+    max-height: calc(80vh - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+}
+
+.al-sheet.is-open {
+    display: block;
+    animation: al-slide-up 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.al-sheet-inner {
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    max-height: inherit;
+}
+
+.al-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 18px;
+    line-height: 44px;
+    text-align: center;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.al-close:active {
+    background: rgba(15, 23, 42, 0.06);
+}
+
+/* ============ 文本 ============ */
+
+.al-title {
+    margin: 0 36px 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.al-hint {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.al-hint-warn {
+    color: #b45309;
+}
+
+.al-steps {
+    margin: 0 0 16px 0;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.9;
+}
+
+/* ============ 目标卡片（三宫格，结构对应 camera-capture 的 .cam-actions）============ */
+
+.al-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 4px 0;
+}
+
+.al-action {
+    flex: 1 1 30%;
+    min-width: 92px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 88px;
+    padding: 12px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #1e293b;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 150ms ease, border-color 150ms ease;
+}
+
+.al-action:active {
+    background: #eff6ff;
+    border-color: rgba(35, 124, 243, 0.45);
+}
+
+.al-action-icon {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.al-action-label {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.al-action-sub {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.3;
+    text-align: center;
+}
+
+/* ============ 兜底视图按钮（全宽纵向排列）============ */
+
+.al-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 12px 0;
+}
+
+.al-btn {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 150ms ease;
+}
+
+.al-btn:active {
+    background: #eff6ff;
+}
+
+.al-btn-primary {
+    background: #237CF3;
+    border-color: #237CF3;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.al-btn-primary:active {
+    background: #1b64c9;
+}
+
+.al-coord {
+    display: block;
+    margin: 0 0 12px 0;
+    padding: 10px 12px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    color: #0f172a;
+    text-align: center;
+    /* 复制失效时用户可长按选中 */
+    -webkit-user-select: all;
+    user-select: all;
+}
+
+.al-footnote {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* ============ Toast（瞬态，pointer-events:none）============ */
+
+.al-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    max-width: 80vw;
+    padding: 10px 16px;
+    background: rgba(15, 23, 42, 0.86);
+    color: #ffffff;
+    font-size: 13px;
+    line-height: 1.5;
+    border-radius: 999px;
+    z-index: 10006;
+    pointer-events: none;
+    -webkit-tap-highlight-color: transparent;
+    animation: al-fade-in 180ms ease-out;
+}
+
+/* ============ 动画 ============ */
+
+@keyframes al-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes al-slide-up {
+    from { transform: translateY(24px); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .al-mask.is-open,
+    .al-sheet.is-open,
+    .al-toast {
+        animation: none;
+    }
+}
+
+/* ============ 响应式 ============ */
+
+/* 窄屏：卡片转单列横排（照 camera-capture.css:398-410 的窄屏处理） */
+@media (max-width: 359px) {
+    .al-action {
+        flex: 1 1 100%;
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 12px;
+        min-height: 56px;
+        padding: 10px 14px;
+    }
+
+    .al-action-icon { font-size: 22px; }
+    .al-action-label { text-align: left; }
+    .al-action-sub { text-align: left; margin-left: auto; }
+}
+
+/* 平板/桌面：居中 480px（照 camera-capture.css:377-396） */
+@media (min-width: 640px) {
+    .al-sheet {
+        left: 50%;
+        right: auto;
+        bottom: 32px;
+        width: 480px;
+        transform: translateX(-50%);
+        border-radius: 16px;
+    }
+
+    .al-sheet.is-open {
+        animation: al-fade-in 220ms ease-out;
+    }
+}

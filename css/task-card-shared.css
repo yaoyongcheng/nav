@@ -1,0 +1,313 @@
+.task-card {
+    background: linear-gradient(180deg, #F9FCFF 0%, #F3F8FF 100%);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0px 0px 4px 0px rgba(47, 72, 83, 0.2);
+    border: none;
+}
+
+.task-card.task-green .task-card-header {
+    background: linear-gradient(to bottom, #E8F5E9 0%, #FFFFFF 100%);
+    background-color: #E8F5E9;
+    margin: -16px -16px 0 -16px;
+    padding: 16px;
+    border-radius: 10px 10px 0 0;
+}
+
+.task-card.task-red .task-card-header {
+    background: linear-gradient(to bottom, #FFEBEE 0%, #FFFFFF 100%);
+    background-color: #FFEBEE;
+    margin: -16px -16px 0 -16px;
+    padding: 16px;
+    border-radius: 10px 10px 0 0;
+}
+
+.task-card.task-gray .task-card-header {
+    background: linear-gradient(to bottom, #F3F5F7 0%, #FFFFFF 100%);
+    background-color: #F3F5F7;
+    margin: -16px -16px 0 -16px;
+    padding: 16px;
+    border-radius: 10px 10px 0 0;
+}
+
+.task-card.task-status-success .task-card-header {
+    background: linear-gradient(179deg, rgba(129,237,157,0.3) 0%, rgba(129,237,157,0) 100%);
+    margin: -16px -16px 0 -16px;
+    padding: 16px;
+    border-radius: 6px 6px 0 0;
+}
+
+.task-card.task-status-danger .task-card-header {
+    background: linear-gradient(179deg, rgba(255,165,153,0.3) 0%, rgba(255,165,153,0) 100%);
+    margin: -16px -16px 0 -16px;
+    padding: 16px;
+    border-radius: 6px 6px 0 0;
+}
+
+.task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.task-card-header::after {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 0;
+    height: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.task-card-left {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    padding-right: 12px;
+}
+
+.task-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #143662;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-card-type {
+    font-size: 14px;
+    color: #64B5F6;
+    white-space: nowrap;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.task-card-nav {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.task-card-nav.is-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.task-card-nav .nav-icon {
+    width: 25px;
+    height: 25px;
+    display: block;
+}
+
+.task-card-status {
+    width: 80px;
+    height: 16px;
+    font-family: 'OPPO Sans 4.0','OPPO Sans 40', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 16px;
+    text-align: right;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.task-card-status.status-success {
+    color: #00C580;
+}
+
+.task-card-status.status-danger {
+    color: #F47160;
+}
+
+.task-card-status.status-default {
+    color: #143662;
+}
+
+.task-detail-section {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    margin-top: 12px;
+    padding-top: 12px;
+}
+
+.task-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px 0;
+}
+
+.task-detail-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #143662;
+}
+
+.task-detail-toggle {
+    font-size: 16px;
+    color: #143662;
+    transition: transform 0.3s ease;
+}
+
+.task-detail-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.task-detail-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.task-detail-content.expanded {
+    max-height: 1000px;
+}
+
+.task-detail-text {
+    font-size: 13px;
+    color: #666666;
+    line-height: 1.6;
+    padding: 12px 0 8px 0;
+}
+
+.task-timeline {
+    padding: 16px 0 0 0;
+    position: relative;
+}
+
+.timeline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.timeline-row:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-point {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    z-index: 1;
+    position: relative;
+}
+
+.timeline-point.start {
+    background: #2C88FF;
+}
+
+.timeline-point.end {
+    background: #F47160;
+}
+
+.timeline-info {
+    flex: 1;
+    padding-bottom: 8px;
+}
+
+.timeline-horizontal {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.timeline-horizontal .timeline-row {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    margin-bottom: 0;
+}
+
+.timeline-horizontal .timeline-point {
+    margin-right: 0;
+    margin-bottom: 2px;
+}
+
+.timeline-horizontal .timeline-info {
+    padding-bottom: 0;
+    text-align: center;
+}
+
+.timeline-horizontal .timeline-status {
+    display: none;
+}
+
+.timeline-horizontal .timeline-separator {
+    align-self: center;
+    width: 60px;
+    height: 1px;
+    border: 0;
+    background-image: repeating-linear-gradient(
+        to right,
+        #143662 0,
+        #143662 10px,
+        transparent 10px,
+        transparent 20px
+    );
+    flex: 0 0 auto;
+}
+
+.timeline-location {
+    font-size: 14px;
+    color: #143662;
+    font-weight: 500;
+    margin-bottom: 2px;
+    min-height: 20px;
+}
+
+.timeline-nav {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    flex-shrink: 0;
+}
+
+.timeline-horizontal .timeline-row.end-row {
+    position: relative;
+    padding-right: 40px;
+    min-width: 0;
+}
+
+.timeline-date,
+.timeline-time {
+    font-size: 12px;
+    color: #143662;
+}
+
+.timeline-status {
+    text-align: center;
+    padding: 12px 0;
+    position: relative;
+    left: -4px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #4CAF50;
+    color: #FFFFFF;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}

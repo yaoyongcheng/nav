@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>消息中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <style>
+        .message-page {
+            height: 100vh;
+            background-color: #f5f7fa;
+            overflow: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .message-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: linear-gradient(135deg, #2a86ff 0%, #1a6fdd 100%);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            margin-right: 40px;
+        }
+
+        .header-action {
+            color: white;
+            font-size: 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* 消息列表容器 */
+        .message-container {
+            height: 100vh;
+            padding-top: 56px;
+        }
+
+        .message-filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            z-index: 90;
+            padding: 10px 16px 8px;
+            background: #f5f7fa;
+            border-bottom: 1px solid #e9edf3;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .message-filters::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-chip {
+            flex-shrink: 0;
+            border: none;
+            background: #eef3fb;
+            color: #5f6b7a;
+            border-radius: 18px;
+            padding: 8px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-chip.active {
+            background: #2a86ff;
+            color: white;
+        }
+
+        .message-list {
+            height: calc(100vh - 56px - 50px);
+            margin-top: 50px;
+            padding: 14px 16px 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            color: #ddd;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+
+        /* 消息项 - 类似短信样式 */
+        .message-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .message-item:active {
+            transform: scale(0.98);
+            background: #f8f9fa;
+        }
+
+        .message-item.unread {
+            border-left: 4px solid #2a86ff;
+        }
+
+        .message-item.unread::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 8px;
+            height: 8px;
+            background: #ff4d4f;
+            border-radius: 50%;
+        }
+
+        .message-header-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .message-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .message-icon.alert-red {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .message-icon.alert-orange {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .message-icon.alert-blue {
+            background: #e8f1ff;
+            color: #2a86ff;
+        }
+
+        .message-icon i {
+            font-size: 20px;
+        }
+
+        .message-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .message-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .message-status-tag {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            line-height: 1.4;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .message-status-tag.active {
+            background: #ffeaea;
+            color: #f44336;
+        }
+
+        .message-status-tag.updated {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .message-status-tag.cleared {
+            background: #edf7ed;
+            color: #2e7d32;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .message-content {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+            margin-top: 8px;
+            padding-left: 52px;
+        }
+
+        /* 消息详情弹窗 */
+        .message-detail-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .message-detail-overlay.show {
+            display: flex;
+        }
+
+        .message-detail-card {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .detail-header {
+            padding: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-header .message-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+        }
+
+        .detail-header .message-icon i {
+            font-size: 28px;
+        }
+
+        .detail-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .detail-time {
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .detail-body {
+            padding: 20px;
+        }
+
+        .detail-content {
+            font-size: 15px;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .detail-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .detail-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-info-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-info-label {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .detail-info-value {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .detail-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            gap: 12px;
+        }
+
+        .detail-btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 22px;
+            border: none;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .detail-btn.close-btn {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .detail-btn.delete-btn {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .detail-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* 日期分组 */
+        .date-group {
+            margin-bottom: 20px;
+        }
+
+        .date-label {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="message-page">
+        <!-- 顶部导航 -->
+        <div class="message-header">
+            <button class="back-btn" id="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="header-title">消息中心</div>
+            <button class="header-action" id="mark-all-read">全部已读</button>
+        </div>
+
+        <!-- 消息列表 -->
+        <div class="message-container">
+            <div class="message-filters" id="message-filters"></div>
+            <div class="message-list" id="message-list">
+                <!-- 动态生成消息列表 -->
+            </div>
+        </div>
+
+        <!-- 消息详情弹窗 -->
+        <div class="message-detail-overlay" id="message-detail-overlay">
+            <div class="message-detail-card">
+                <div class="detail-header">
+                    <div class="message-icon alert-red" id="detail-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="detail-title" id="detail-title">警告标题</div>
+                    <div class="detail-time" id="detail-time">2024-01-01 12:00</div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-content" id="detail-content">
+                        消息内容
+                    </div>
+                    <div class="detail-info">
+                        <div class="detail-info-item">
+                            <span class="detail-info-label">车辆</span>
+                            <span class="detail-info-value" id="detail-vehicle">-</span>
+                        </div>
+                        <div class="detail-info-item">
+                            <span class="detail-info-label">围栏</span>
+                            <span class="detail-info-value" id="detail-fence">-</span>
+                        </div>
+                        <div class="detail-info-item">
+                            <span class="detail-info-label">位置</span>
+                            <span class="detail-info-value" id="detail-location">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-footer">
+                    <button class="detail-btn close-btn" id="detail-close">关闭</button>
+                    <button class="detail-btn delete-btn" id="detail-delete">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/admin-message-manager.js"></script>
+    <script src="js/admin-alarm-event-center.js"></script>
+    <script src="js/admin-websocket.js"></script>
+    <script src="js/admin-nav-badge.js"></script>
+    <script src="js/ios-badge.js"></script>
+    <script>
+        // iOS PWA 桌面角标同步：标记已读后立即清零
+        window.addEventListener('messageUpdated', function () {
+            try {
+                if (window.IOSBadge && window.AdminMessageManager) {
+                    IOSBadge.setBadge(AdminMessageManager.getUnreadCount());
+                }
+            } catch (_) {}
+        });
+    </script>
+    <script>
+        // 当前查看的消息
+        let currentMessage = null;
+        let currentFilter = 'all';
+        const FILTERS = [
+            { key: 'all', label: '全部' },
+            { key: 'road_status', label: '道路状态' },
+            { key: 'fence_enter_prohibit', label: '禁停区' },
+            { key: 'fence_leave_site', label: '违规出厂' },
+            { key: 'route_deviation', label: '偏离路线' }
+        ];
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            renderMessages();
+            bindEvents();
+        });
+
+        // 绑定事件
+        function bindEvents() {
+            // 返回按钮
+            document.getElementById('back-btn').addEventListener('click', function() {
+                window.location.href = 'admin_profile.html';
+            });
+
+            // 全部已读
+            document.getElementById('mark-all-read').addEventListener('click', function() {
+                AdminMessageManager.markAllAsRead();
+                renderMessages();
+            });
+
+            window.addEventListener('messageUpdated', function() {
+                renderMessages();
+            });
+
+            // 关闭详情
+            document.getElementById('detail-close').addEventListener('click', closeDetail);
+            document.getElementById('message-detail-overlay').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeDetail();
+                }
+            });
+
+            // 删除消息
+            document.getElementById('detail-delete').addEventListener('click', function() {
+                if (currentMessage) {
+                    AdminMessageManager.deleteMessage(currentMessage.id);
+                    closeDetail();
+                    renderMessages();
+                }
+            });
+        }
+
+        // 渲染消息列表
+        function renderMessages() {
+            const messages = AdminMessageManager.getMessages();
+            const listEl = document.getElementById('message-list');
+            renderFilters(messages);
+            const filteredMessages = filterMessages(messages);
+
+            if (filteredMessages.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>${getEmptyText()}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 按日期分组
+            const grouped = groupMessagesByDate(filteredMessages);
+            let html = '';
+
+            for (const [date, msgs] of Object.entries(grouped)) {
+                html += `<div class="date-group">`;
+                html += `<div class="date-label">${date}</div>`;
+
+                for (const msg of msgs) {
+                    const isUnread = !msg.read;
+                    const meta = AdminMessageManager.getMessageMeta(msg.type);
+
+                    html += `
+                        <div class="message-item ${isUnread ? 'unread' : ''}" data-id="${msg.id}">
+                            <div class="message-header-row">
+                                <div class="message-icon ${meta.iconClass}">
+                                    <i class="fas fa-${meta.iconName}"></i>
+                                </div>
+                                <div class="message-info">
+                                    <div class="message-title">${msg.title}${renderStatusTag(msg)}</div>
+                                    <div class="message-time">${AdminMessageManager.formatTime(msg.timestamp)}</div>
+                                </div>
+                            </div>
+                            <div class="message-content">${msg.content}</div>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+            }
+
+            listEl.innerHTML = html;
+
+            // 绑定点击事件
+            listEl.querySelectorAll('.message-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const msgId = this.dataset.id;
+                    const msg = messages.find(m => m.id === msgId);
+                    if (msg) {
+                        showDetail(msg);
+                    }
+                });
+            });
+        }
+
+        function renderFilters(messages) {
+            const stats = AdminMessageManager.getMessageStats(messages);
+            const counters = {
+                all: stats.total,
+                road_status: stats.road_status,
+                fence_enter_prohibit: stats.fence_enter_prohibit,
+                fence_leave_site: stats.fence_leave_site,
+                route_deviation: stats.route_deviation
+            };
+
+            const html = FILTERS.map(filter => `
+                <button class="filter-chip ${currentFilter === filter.key ? 'active' : ''}" data-filter="${filter.key}">
+                    ${filter.label} ${counters[filter.key] !== undefined ? `(${counters[filter.key]})` : ''}
+                </button>
+            `).join('');
+
+            const filtersEl = document.getElementById('message-filters');
+            filtersEl.innerHTML = html;
+            filtersEl.querySelectorAll('.filter-chip').forEach(button => {
+                button.addEventListener('click', function() {
+                    currentFilter = this.dataset.filter;
+                    renderMessages();
+                });
+            });
+        }
+
+        function filterMessages(messages) {
+            if (!currentFilter || currentFilter === 'all') {
+                return messages;
+            }
+            return messages.filter(message => message.type === currentFilter);
+        }
+
+        function getEmptyText() {
+            const active = FILTERS.find(item => item.key === currentFilter);
+            if (!active || currentFilter === 'all') {
+                return '暂无消息';
+            }
+            return `暂无${active.label}消息`;
+        }
+
+        function renderStatusTag(msg) {
+            const status = msg.messageStatus || 'active';
+            if (status === 'updated') {
+                return '<span class="message-status-tag updated">持续中</span>';
+            }
+            if (status === 'cleared') {
+                return '<span class="message-status-tag cleared">已解除</span>';
+            }
+            return '<span class="message-status-tag active">报警中</span>';
+        }
+
+        // 按日期分组
+        function groupMessagesByDate(messages) {
+            const groups = {};
+            const today = new Date().toDateString();
+            const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+            messages.forEach(msg => {
+                const msgDate = new Date(msg.timestamp).toDateString();
+                let label;
+
+                if (msgDate === today) {
+                    label = '今天';
+                } else if (msgDate === yesterday) {
+                    label = '昨天';
+                } else {
+                    label = new Date(msg.timestamp).toLocaleDateString('zh-CN', {
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+
+                if (!groups[label]) {
+                    groups[label] = [];
+                }
+                groups[label].push(msg);
+            });
+
+            return groups;
+        }
+
+        // 显示详情
+        function showDetail(msg) {
+            currentMessage = msg;
+
+            // 标记为已读
+            AdminMessageManager.markAsRead(msg.id);
+
+            // 更新UI
+            const iconEl = document.getElementById('detail-icon');
+            const meta = AdminMessageManager.getMessageMeta(msg.type);
+            iconEl.className = `message-icon ${meta.iconClass}`;
+            iconEl.innerHTML = `<i class="fas fa-${meta.iconName}"></i>`;
+
+            document.getElementById('detail-title').textContent = msg.title;
+            document.getElementById('detail-time').textContent = new Date(msg.timestamp).toLocaleString('zh-CN');
+            document.getElementById('detail-content').textContent = `${msg.content}${buildDetailStatusSuffix(msg)}`;
+            updateDetailRows(msg);
+
+            document.getElementById('message-detail-overlay').classList.add('show');
+
+            // 刷新列表显示（更新已读状态）
+            renderMessages();
+        }
+
+        function updateDetailRows(msg) {
+            const labelVehicle = document.querySelector('.detail-info-item:nth-child(1) .detail-info-label');
+            const labelFence = document.querySelector('.detail-info-item:nth-child(2) .detail-info-label');
+            const labelLocation = document.querySelector('.detail-info-item:nth-child(3) .detail-info-label');
+
+            const valueVehicle = document.getElementById('detail-vehicle');
+            const valueFence = document.getElementById('detail-fence');
+            const valueLocation = document.getElementById('detail-location');
+
+            if (msg.type === 'road_status') {
+                labelVehicle.textContent = '项目';
+                labelFence.textContent = '摄像头/状态';
+                labelLocation.textContent = '说明';
+                valueVehicle.textContent = msg.projectName || msg.projectId || '-';
+                valueFence.textContent = `${msg.cameraId || '-'} / ${msg.evaluation || '-'}`;
+                valueLocation.textContent = msg.description || '道路状态实时推送';
+                return;
+            }
+
+            labelVehicle.textContent = '车辆';
+            labelFence.textContent = msg.type === 'route_deviation' ? '路线' : '围栏';
+            labelLocation.textContent = '位置';
+            valueVehicle.textContent = msg.plateNumber || msg.vehicleId || '-';
+            valueFence.textContent = msg.type === 'route_deviation'
+                ? (msg.lineName || msg.polylineId || '规定路线')
+                : (msg.fenceName || '-');
+
+            if (msg.latitude !== null && msg.latitude !== undefined && msg.longitude !== null && msg.longitude !== undefined) {
+                valueLocation.textContent = `${Number(msg.latitude).toFixed(6)}, ${Number(msg.longitude).toFixed(6)}`;
+            } else {
+                valueLocation.textContent = '-';
+            }
+        }
+
+        function buildDetailStatusSuffix(msg) {
+            if (!msg || !msg.messageStatus) {
+                return '';
+            }
+            if (msg.messageStatus === 'cleared') {
+                return '（当前已解除）';
+            }
+            if (msg.messageStatus === 'updated') {
+                return '（当前仍在持续）';
+            }
+            return '';
+        }
+
+        // 关闭详情
+        function closeDetail() {
+            document.getElementById('message-detail-overlay').classList.remove('show');
+            currentMessage = null;
+        }
+    </script>
+</body>
+</html>

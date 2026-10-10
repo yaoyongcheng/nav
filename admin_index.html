@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>管理员 - 导航</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <script src="js/amap-loader.js"></script>
+</head>
+<!-- 隐藏的文件输入 -->
+<input type="file" id="file-input" accept=".kml" style="display: none;">
+<body>
+    <div class="container admin-container">
+        <!-- 地图容器 -->
+        <div id="map-container"></div>
+
+        <!-- 搜索区域 -->
+        <div class="search-container">
+            <div class="search-box">
+                <img src="images/工地数字导航小程序切图/司机/2X/导航/搜索.png" class="search-icon-img" alt="搜索">
+                <input type="text" placeholder="输入文字搜索目的地" id="search-input" readonly>
+            </div>
+            <div class="search-results" id="search-results">
+                <!-- 搜索结果将动态填充 -->
+            </div>
+        </div>
+
+        <!-- 地图控制按钮 -->
+        <div class="map-controls">
+            <!-- 导入按钮（已隐藏） -->
+            <button class="control-btn" id="import-btn" title="导入数据" style="display: none;">
+                <i class="fas fa-upload"></i>
+            </button>
+            <button class="control-btn" id="locate-btn" title="定位">
+                <img src="images/工地数字导航小程序切图/司机/2X/导航/定位.png" alt="定位" style="width: 24px; height: 24px;">
+            </button>
+        </div>
+
+        <!-- 底部卡片 -->
+        <div class="bottom-card" id="bottom-card">
+            <!-- 路线规划界面 -->
+            <div class="route-planning-section" id="route-planning-section">
+                <div class="route-selector">
+                    <div class="location-inputs-wrapper">
+                        <div class="location-inputs">
+                            <div class="location-item">
+                                <i class="fas fa-circle start-icon"></i>
+                                <input type="text" placeholder="我的位置" id="start-location" readonly>
+                            </div>
+                            <div class="divider-line">
+                                <button class="swap-btn" id="swap-locations-btn" title="切换起点终点">
+                                    <img src="images/工地数字导航小程序切图/司机/2X/导航/切换起点终点.png" alt="切换起点终点">
+                                </button>
+                            </div>
+                            <div class="waypoints-container" id="waypoints-container">
+                                <!-- 途经点将动态添加 -->
+                            </div>
+                            <div class="location-item">
+                                <i class="fas fa-circle end-icon"></i>
+                                <input type="text" placeholder="请输入目的地" id="end-location" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="add-waypoint">
+                        <div class="add-btn" id="add-waypoint-btn">
+                            <img src="images/工地数字导航小程序切图/司机/2X/导航/添加途径点.png" alt="添加途径点">
+                        </div>
+                        <div class="waypoint-label">途径点</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航（管理端） -->
+        <div class="bottom-nav admin-nav">
+            <div class="nav-item active" data-page="admin-navigation">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-down.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-up.png"
+                     alt="导航">
+                <div class="nav-text">导航</div>
+            </div>
+            <div class="nav-item" data-page="admin-data">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/导航/监控-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/导航/监控-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/导航/监控-up.png"
+                     alt="工地监控">
+                <div class="nav-text">工地监控</div>
+            </div>
+            <div class="nav-item" data-page="admin-transport">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-up.png"
+                     alt="运输管理">
+                <div class="nav-text">运输管理</div>
+            </div>
+            <div class="nav-item" data-page="admin-profile">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png"
+                     alt="我的">
+                <div class="nav-text">我的</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 视频播放库：本地化，避免CDN在局域网/企业网络被拦截 -->
+    <script src="js/flv.min.js"></script>
+    <script src="js/hls.min.js"></script>
+
+    <!-- 司机端核心脚本（提供地图和导航功能） -->
+    <script src="js/config.js"></script>
+    <script src="js/coordinate-convert.js"></script>
+    <script src="js/segment-splitter.js"></script>
+    <script src="js/map-core.js"></script>
+    <script src="js/point-name-utils.js"></script>
+    <script src="js/map/base-map-renderer.js"></script>
+    <script src="js/kml-handler.js"></script>
+    <script src="js/search-service.js"></script>
+    <script src="js/enhanced-highlight.js"></script>
+    <script src="js/point-selection.js"></script>
+    <script src="js/driver-road-status.js"></script>
+    <script src="js/kml-route-planning.js"></script>
+    <script src="js/route-planning.js"></script>
+    <script src="js/browser-toolbar-detect.js"></script>
+    <script src="js/ui-utils.js"></script>
+    <script src="js/api-data-converter.js"></script>
+    <script src="js/admin-message-manager.js"></script>
+    <script src="js/admin-alarm-event-center.js"></script>
+    <script src="js/admin-websocket.js"></script>
+    <script src="js/admin-nav-badge.js"></script>
+    <script src="js/admin-alert-manager.js"></script>
+    <script src="js/admin-road-status-sync.js"></script>
+    <script src="js/ios-badge.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- iOS PWA 桌面角标同步：从本地 AdminMessageManager 拉取未读数同步到桌面图标 -->
+    <script>
+    (function () {
+      function syncBadgeFromLocal() {
+        try {
+          if (!window.IOSBadge) return;
+          // 优先从 AdminMessageManager 取数（如果已加载）
+          if (window.AdminMessageManager && typeof AdminMessageManager.getUnreadCount === 'function') {
+            IOSBadge.setBadge(AdminMessageManager.getUnreadCount());
+          }
+        } catch (_) {}
+      }
+
+      // 页面加载后立即同步一次（恢复角标）
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncBadgeFromLocal);
+      } else {
+        syncBadgeFromLocal();
+      }
+
+      // 切回前台时再同步一次（用户从消息中心返回后能立即看到角标变化）
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) syncBadgeFromLocal();
+      });
+
+      // 暴露给其它脚本（如 markAllAsRead 后）调用
+      window.__syncIOSBadgeFromLocal = syncBadgeFromLocal;
+    })();
+    </script>
+
+    <!-- 管理端导航覆盖：替换司机端底部导航为管理端导航 -->
+    <script>
+    (function() {
+        // 设置导航返回来源为管理端
+        sessionStorage.setItem('navigationReferrer', 'admin_index.html');
+
+        // 等待DOM和main.js初始化完成后，覆盖底部导航栏事件
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var navItems = document.querySelectorAll('.admin-nav .nav-item');
+                // 用cloneNode替换来移除main.js绑定的事件
+                navItems.forEach(function(item) {
+                    var clone = item.cloneNode(true);
+                    item.parentNode.replaceChild(clone, item);
+                });
+                // 重新绑定管理端导航事件
+                var newNavItems = document.querySelectorAll('.admin-nav .nav-item');
+                newNavItems.forEach(function(item) {
+                    item.addEventListener('click', function() {
+                        var page = this.getAttribute('data-page');
+                        // 更新图标状态
+                        newNavItems.forEach(function(nav) {
+                            var img = nav.querySelector('.nav-icon-img');
+                            var text = nav.querySelector('.nav-text');
+                            if (nav === item) {
+                                nav.classList.add('active');
+                                if (img) img.src = img.getAttribute('data-active');
+                                if (text) text.style.color = '#5BA8E3';
+                            } else {
+                                nav.classList.remove('active');
+                                if (img) img.src = img.getAttribute('data-inactive');
+                                if (text) text.style.color = '#666666';
+                            }
+                        });
+                        // 管理端页面跳转
+                        switch(page) {
+                            case 'admin-navigation':
+                                // 当前就是导航页面
+                                break;
+                            case 'admin-data':
+                                window.location.href = 'admin_data.html';
+                                break;
+                            case 'admin-transport':
+                                window.location.href = 'admin_transport.html';
+                                break;
+                            case 'admin-profile':
+                                window.location.href = 'admin_profile.html';
+                                break;
+                        }
+                    });
+                });
+                console.log('[管理端导航] 底部导航栏已覆盖为管理端逻辑');
+            }, 100);
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>搜索设备</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        *::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
+        }
+
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        html,
+        body {
+            height: 100vh;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .search-page-container {
+            height: 100vh;
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .search-header {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        .search-back-btn {
+            position: absolute;
+            left: 20px;
+            border: none;
+            background: none;
+            color: #333;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .search-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #143662;
+        }
+
+        .search-input-container {
+            padding: 15px 20px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fcfdff;
+            border-radius: 10px;
+            box-shadow: 0 0 6px rgba(44, 136, 255, 0.6);
+            padding: 8px 15px;
+        }
+
+        .search-input-field {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .search-input-field::placeholder {
+            color: #9aa8bc;
+        }
+
+        .clear-input-btn {
+            width: 15px;
+            height: 15px;
+            border: 1px solid #515151;
+            border-radius: 50%;
+            background: #fff;
+            position: relative;
+            display: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .clear-input-btn::before,
+        .clear-input-btn::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 9px;
+            height: 1.5px;
+            background: #515151;
+            border-radius: 1px;
+        }
+
+        .clear-input-btn::before {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .clear-input-btn::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        .clear-input-btn.show {
+            display: inline-block;
+        }
+
+        .search-btn {
+            border: none;
+            border-radius: 10px;
+            background: #2a86ff;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 400;
+            padding: 8px 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .search-content {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .search-results {
+            min-height: 100%;
+            background: #fff;
+        }
+
+        .search-section-title {
+            padding: 12px 20px 8px;
+            color: #8da1bf;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .search-result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(20, 54, 98, 0.12);
+            background: #fff;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .search-result-item:active {
+            background: #f4f8ff;
+        }
+
+        .search-result-icon {
+            width: 24px;
+            height: 24px;
+            color: #143662;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 20px;
+        }
+
+        .search-result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-result-name {
+            color: #143662;
+            font-size: 16px;
+            font-weight: 500;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .search-result-desc {
+            margin-top: 2px;
+            color: rgba(35, 124, 243, 0.6);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .search-highlight {
+            color: #2a86ff;
+            font-weight: 600;
+        }
+
+        .search-empty {
+            padding: 60px 20px;
+            text-align: center;
+            color: #9aa8bc;
+        }
+
+        .search-empty i {
+            margin-bottom: 12px;
+            color: #d5dfef;
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-page-container">
+        <div class="search-header">
+            <button class="search-back-btn" id="search-back-btn" aria-label="返回">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="search-title">搜索</div>
+        </div>
+
+        <div class="search-input-container">
+            <div class="search-input-wrapper">
+                <input type="text" id="search-input" class="search-input-field" placeholder="输入文字搜索设备" autocomplete="off">
+                <button type="button" class="clear-input-btn" id="clear-input-btn" aria-label="清空"></button>
+                <button type="button" class="search-btn" id="search-btn">搜索</button>
+            </div>
+        </div>
+
+        <div class="search-content">
+            <div class="search-results" id="search-results"></div>
+        </div>
+    </div>
+
+    <script>
+        const DEVICE_HISTORY_KEY = 'adminDeviceSearchHistory';
+        const PENDING_CAMERA_KEY = 'adminPendingCameraSelection';
+        const PENDING_VEHICLE_KEY = 'adminPendingVehicleDetail';
+        const DEFAULT_REFERRER = 'admin_data.html';
+
+        let adminDeviceData = {
+            cameras: [],
+            vehicles: []
+        };
+
+        function checkLoginStatus() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            if (!isLoggedIn || (currentUser.role !== 'manager' && !currentUser.isAdmin)) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        function getReferrerPage() {
+            return sessionStorage.getItem('searchReferrer') || DEFAULT_REFERRER;
+        }
+
+        function goBack() {
+            window.location.href = getReferrerPage();
+        }
+
+        function getProjectId() {
+            try {
+                const projectSelection = sessionStorage.getItem('projectSelection');
+                const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+                if (!projectSelection) return null;
+
+                const selection = JSON.parse(projectSelection);
+                const userProjects = currentUser.projects || [];
+                let selectedProject = null;
+
+                if (selection.projectCode) {
+                    selectedProject = userProjects.find(project =>
+                        String(project.projectCode) === String(selection.projectCode) ||
+                        String(project.id) === String(selection.projectCode)
+                    );
+                }
+
+                if (!selectedProject && selection.project) {
+                    selectedProject = userProjects.find(project => project.projectName === selection.project);
+                }
+
+                return selectedProject ? (selectedProject.projectCode || selectedProject.id) : null;
+            } catch (error) {
+                console.error('[设备搜索] 获取项目ID失败:', error);
+                return null;
+            }
+        }
+
+        function getAuthHeaders() {
+            const headers = { accept: 'application/json' };
+            const token = sessionStorage.getItem('authToken') || '';
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeRegExp(value) {
+            return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function highlightText(text, keyword) {
+            if (!text || !keyword) return escapeHtml(text);
+            const regex = new RegExp(escapeRegExp(keyword), 'gi');
+            return escapeHtml(text).replace(regex, match => `<span class="search-highlight">${match}</span>`);
+        }
+
+        function normalizePlateNumber(value) {
+            return String(value || '').replace(/\s+/g, '').toUpperCase();
+        }
+
+        function formatPlateNumberDisplay(value) {
+            return normalizePlateNumber(value);
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '无';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '无';
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${month}月${day}日 ${hours}:${minutes}`;
+        }
+
+        function getTaskStatusPriority(status) {
+            switch (Number(status)) {
+                case 2: return 500;
+                case 1: return 400;
+                case 0: return 300;
+                case 3: return 200;
+                case 4: return 100;
+                default: return 0;
+            }
+        }
+
+        function getTaskProgressInfo(taskLike) {
+            const task = taskLike || {};
+            const statusCode = Number(task.status);
+            const exitDeadline = task.exit_end_time || task.exit_start_time || task.exitEndTime || task.exitTime;
+            const deadlineTime = exitDeadline ? new Date(exitDeadline).getTime() : NaN;
+            const isCompleted = statusCode === 3 || String(task.task_status || '').trim() === '已完成';
+            const isOngoing = statusCode === 2 || String(task.task_status || '').trim() === '进行中';
+
+            if (!Number.isNaN(deadlineTime) && !isCompleted && Date.now() > deadlineTime) {
+                return { text: '已逾期', className: 'overdue' };
+            }
+
+            if (isOngoing) {
+                return { text: '进行中', className: 'ongoing' };
+            }
+
+            if (isCompleted) {
+                return { text: '已完成', className: 'completed' };
+            }
+
+            return {
+                text: String(task.task_status || task.status_text || '无任务'),
+                className: 'default'
+            };
+        }
+
+        function getVehicleField(source, keys, fallback = '') {
+            for (const key of keys) {
+                const value = source ? source[key] : undefined;
+                if (value !== undefined && value !== null && value !== '') {
+                    return value;
+                }
+            }
+            return fallback;
+        }
+
+        function buildTaskMap(tasks) {
+            const taskMap = new Map();
+            (tasks || []).forEach(task => {
+                const plateKey = normalizePlateNumber(task.plate_number || task.plateNumber);
+                if (!plateKey) return;
+
+                const existing = taskMap.get(plateKey);
+                const nextPriority = getTaskStatusPriority(task.status);
+                const existingPriority = existing ? getTaskStatusPriority(existing.status) : -1;
+
+                if (!existing || nextPriority > existingPriority) {
+                    taskMap.set(plateKey, task);
+                }
+            });
+            return taskMap;
+        }
+
+        async function fetchCameras(projectId) {
+            const url = `https://dmap.cscec3bxjy.cn/api/video/cameras?page=1&page_size=1000&project_id=${projectId}`;
+            const response = await fetch(url, { method: 'GET', headers: getAuthHeaders() });
+            if (!response.ok) return [];
+            const result = await response.json();
+            return result.code === 200 && result.data ? (result.data.list || result.data.items || result.data || []) : [];
+        }
+
+        async function fetchTasks(projectId) {
+            const url = `http://115.159.67.12:8086/api/transport/tasks/project/${projectId}?page=1&page_size=1000`;
+            const response = await fetch(url, { method: 'GET', headers: getAuthHeaders(), credentials: 'omit' });
+            if (!response.ok) return [];
+            const result = await response.json();
+            return result.code === 200 && result.data ? (result.data.list || result.data || []) : [];
+        }
+
+        async function fetchVehicleDashboard(projectId) {
+            const url = `http://115.159.67.12:8086/api/transport/statistics/dashboard?projectId=${projectId}`;
+            const response = await fetch(url, { method: 'GET', headers: getAuthHeaders(), credentials: 'omit' });
+            if (!response.ok) return [];
+            const result = await response.json();
+            return result.code === 200 && result.data ? (result.data.list || []) : [];
+        }
+
+        function mergeVehicleDetail(vehicle, task) {
+            const progressInfo = getTaskProgressInfo({
+                status: task ? task.status : null,
+                task_status: getVehicleField(vehicle, ['taskStatus', 'task_status'], ''),
+                exit_end_time: task ? task.exit_end_time : null,
+                exit_start_time: task ? task.exit_start_time : null
+            });
+
+            return {
+                deviceType: 'vehicle',
+                name: formatPlateNumberDisplay(getVehicleField(vehicle, ['plateNumber', 'plate_number'], '未知车牌')),
+                description: getVehicleField(vehicle, ['attribute'], '场上车辆'),
+                detail: {
+                    vehicleType: getVehicleField(vehicle, ['attribute', 'vehicle_type_name', 'vehicleTypeName'], '场上车辆'),
+                    taskType: getVehicleField(task, ['task_name', 'taskName'], '暂无任务'),
+                    plateNumber: formatPlateNumberDisplay(getVehicleField(vehicle, ['plateNumber', 'plate_number'], '无')),
+                    locator: getVehicleField(task, ['vehicle_id', 'vehicleId', 'tracker_id', 'trackerId'], '无'),
+                    driverName: getVehicleField(task, ['driver_name', 'driverName'], '无'),
+                    phone: getVehicleField(task, ['phone', 'contact', 'mobile'], '无'),
+                    exitTime: formatDateTime(getVehicleField(vehicle, ['exitTime', 'exit_time'], null)),
+                    entryTime: formatDateTime(getVehicleField(vehicle, ['entryTime', 'entry_time'], null)),
+                    taskStatus: progressInfo.text
+                }
+            };
+        }
+
+        async function loadAdminDeviceData() {
+            const projectId = getProjectId();
+            if (!projectId) {
+                adminDeviceData = { cameras: [], vehicles: [] };
+                return;
+            }
+
+            const [cameras, tasks, dashboardVehicles] = await Promise.all([
+                fetchCameras(projectId),
+                fetchTasks(projectId),
+                fetchVehicleDashboard(projectId)
+            ]);
+
+            const taskMap = buildTaskMap(tasks);
+
+            adminDeviceData = {
+                cameras: (cameras || []).map(camera => ({
+                    deviceType: 'camera',
+                    name: getVehicleField(camera, ['camera_name', 'name'], '未命名监控'),
+                    description: '监控设备',
+                    detail: camera
+                })),
+                vehicles: (dashboardVehicles || []).map(vehicle => {
+                    const plateKey = normalizePlateNumber(getVehicleField(vehicle, ['plateNumber', 'plate_number'], ''));
+                    return mergeVehicleDetail(vehicle, taskMap.get(plateKey));
+                }).filter(item => item.name && item.name !== '未知车牌')
+            };
+        }
+
+        function loadDeviceHistory() {
+            try {
+                const stored = localStorage.getItem(DEVICE_HISTORY_KEY);
+                const parsed = stored ? JSON.parse(stored) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.error('[设备搜索] 加载历史失败:', error);
+                return [];
+            }
+        }
+
+        function saveDeviceHistory(item) {
+            try {
+                const history = loadDeviceHistory();
+                const uniqueKey = `${item.deviceType}:${item.name}`;
+                const filtered = history.filter(record => `${record.deviceType}:${record.name}` !== uniqueKey);
+                filtered.unshift(item);
+                localStorage.setItem(DEVICE_HISTORY_KEY, JSON.stringify(filtered.slice(0, 20)));
+            } catch (error) {
+                console.error('[设备搜索] 保存历史失败:', error);
+            }
+        }
+
+        function searchDevices(keyword) {
+            const lowerKeyword = String(keyword || '').trim().toLowerCase();
+            if (!lowerKeyword) {
+                return [];
+            }
+
+            return [...adminDeviceData.vehicles, ...adminDeviceData.cameras].filter(item => {
+                const name = String(item.name || '').toLowerCase();
+                const desc = String(item.description || '').toLowerCase();
+                return name.includes(lowerKeyword) || desc.includes(lowerKeyword);
+            });
+        }
+
+        function renderHistory(keyword = '') {
+            const resultsContainer = document.getElementById('search-results');
+            const history = loadDeviceHistory();
+
+            if (!history.length) {
+                resultsContainer.innerHTML = `
+                    <div class="search-empty">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        <div>暂无设备搜索记录</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="search-section-title">历史搜索</div>';
+            history.forEach(item => {
+                html += createResultItemHtml(item, 'history', keyword);
+            });
+            resultsContainer.innerHTML = html;
+        }
+
+        function renderSearchResults(keyword) {
+            const resultsContainer = document.getElementById('search-results');
+            const resultList = searchDevices(keyword);
+
+            if (!keyword.trim()) {
+                renderHistory();
+                return;
+            }
+
+            if (!resultList.length) {
+                resultsContainer.innerHTML = `
+                    <div class="search-empty">
+                        <i class="fas fa-search"></i>
+                        <div>未找到匹配的设备</div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="search-section-title">搜索结果</div>';
+            resultList.forEach(item => {
+                html += createResultItemHtml(item, 'result', keyword);
+            });
+            resultsContainer.innerHTML = html;
+        }
+
+        function createResultItemHtml(item, mode, keyword) {
+            const safePayload = encodeURIComponent(JSON.stringify(item));
+            const isHistory = mode === 'history';
+            const iconClass = isHistory
+                ? 'fa-clock-rotate-left'
+                : (item.deviceType === 'camera' ? 'fa-video' : 'fa-car-side');
+            const descText = isHistory
+                ? (item.deviceType === 'camera' ? '监控设备' : '车辆设备')
+                : (item.description || (item.deviceType === 'camera' ? '监控设备' : '场上车辆'));
+
+            return `
+                <div class="search-result-item" data-payload="${safePayload}">
+                    <div class="search-result-icon">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div class="search-result-info">
+                        <div class="search-result-name">${highlightText(item.name, keyword)}</div>
+                        <div class="search-result-desc">${highlightText(descText, keyword)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openDeviceItem(item) {
+            saveDeviceHistory(item);
+
+            if (item.deviceType === 'camera') {
+                sessionStorage.setItem(PENDING_CAMERA_KEY, JSON.stringify(item.detail || {}));
+            } else {
+                sessionStorage.setItem(PENDING_VEHICLE_KEY, JSON.stringify(item.detail || {}));
+            }
+
+            window.location.href = DEFAULT_REFERRER;
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkLoginStatus()) {
+                return;
+            }
+
+            const backBtn = document.getElementById('search-back-btn');
+            const searchInput = document.getElementById('search-input');
+            const clearBtn = document.getElementById('clear-input-btn');
+            const searchBtn = document.getElementById('search-btn');
+            const resultsContainer = document.getElementById('search-results');
+
+            backBtn.addEventListener('click', goBack);
+
+            searchBtn.addEventListener('click', function() {
+                renderSearchResults(searchInput.value.trim());
+            });
+
+            searchInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    renderSearchResults(searchInput.value.trim());
+                }
+            });
+
+            let searchTimer = null;
+            searchInput.addEventListener('input', function() {
+                const keyword = this.value.trim();
+                clearBtn.classList.toggle('show', Boolean(keyword));
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => {
+                    if (keyword) {
+                        renderSearchResults(keyword);
+                    } else {
+                        renderHistory();
+                    }
+                }, 200);
+            });
+
+            clearBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                clearBtn.classList.remove('show');
+                searchInput.focus();
+                renderHistory();
+            });
+
+            resultsContainer.addEventListener('click', function(event) {
+                const itemElement = event.target.closest('.search-result-item');
+                if (!itemElement) return;
+
+                try {
+                    const payload = JSON.parse(decodeURIComponent(itemElement.dataset.payload || ''));
+                    openDeviceItem(payload);
+                } catch (error) {
+                    console.error('[设备搜索] 打开设备失败:', error);
+                }
+            });
+
+            await loadAdminDeviceData();
+            renderHistory();
+
+            setTimeout(() => searchInput.focus(), 100);
+        });
+    </script>
+</body>
+</html>

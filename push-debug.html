@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Push 诊断 — 工地导航</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  background: #1a1a1a; color: #f0f0f0;
+  padding: 20px; line-height: 1.6; padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+h1 { color: #4fc3f7; font-size: 18px; margin-bottom: 16px; }
+.section { background: #2a2a2a; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+.section h2 { color: #ffd54f; font-size: 14px; margin-bottom: 8px; }
+.row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #333; font-size: 13px; }
+.row:last-child { border-bottom: none; }
+.k { color: #888; }
+.v { color: #fff; font-family: ui-monospace, "SF Mono", monospace; }
+.v.green { color: #66bb6a; }
+.v.red { color: #ef5350; }
+.v.yellow { color: #ffd54f; }
+button {
+  width: 100%; padding: 14px; border: none; border-radius: 8px;
+  background: #1976d2; color: #fff; font-size: 16px;
+  font-weight: 600; margin-top: 8px; cursor: pointer;
+}
+button:active { background: #1565c0; }
+button.warn { background: #f57c00; }
+button.danger { background: #d32f2f; }
+#log {
+  background: #000; color: #0f0; font-family: ui-monospace, monospace;
+  font-size: 11px; padding: 10px; border-radius: 4px;
+  max-height: 200px; overflow-y: auto; white-space: pre-wrap;
+}
+</style>
+</head>
+<body>
+<h1>🔍 Push 通知诊断（iOS PWA）</h1>
+
+<div class="section">
+  <h2>📱 环境信息</h2>
+  <div class="row"><span class="k">iOS</span><span class="v" id="r-ios">-</span></div>
+  <div class="row"><span class="k">iOS version</span><span class="v" id="r-iosver">-</span></div>
+  <div class="row"><span class="k">standalone</span><span class="v" id="r-standalone">-</span></div>
+  <div class="row"><span class="k">Notification</span><span class="v" id="r-notif">-</span></div>
+  <div class="row"><span class="k">PushManager</span><span class="v" id="r-push">-</span></div>
+  <div class="row"><span class="k">ServiceWorker</span><span class="v" id="r-sw">-</span></div>
+  <div class="row"><span class="k">controller</span><span class="v" id="r-ctrl">-</span></div>
+  <div class="row"><span class="k">SW scope</span><span class="v" id="r-scope">-</span></div>
+</div>
+
+<div class="section">
+  <h2>🔴 iOS PWA 桌面角标（v1.6.11 新增）</h2>
+  <div class="row"><span class="k">setAppBadge 支持</span><span class="v" id="r-badge-api">-</span></div>
+  <div class="row"><span class="k">iOSBadge.isAvailable</span><span class="v" id="r-badge-avail">-</span></div>
+  <div class="row"><span class="k">当前未读数</span><span class="v" id="r-badge-cur">-</span></div>
+  <div class="row"><span class="k">localStorage</span><span class="v" id="r-badge-ls">-</span></div>
+  <button id="b-badge-set5" style="background:#388e3c;">⑦ 桌面图标设 5（看主屏）</button>
+  <button id="b-badge-set1">⑧ 桌面图标设 1</button>
+  <button id="b-badge-add1">⑨ +1</button>
+  <button id="b-badge-clear" class="danger">⑩ 清零（角标消失）</button>
+</div>
+
+<div class="section">
+  <h2>🔐 权限状态</h2>
+  <div class="row"><span class="k">Notification.permission</span><span class="v" id="r-perm">-</span></div>
+  <div class="row"><span class="k">现有 subscription</span><span class="v" id="r-sub">-</span></div>
+  <div class="row"><span class="k">localStorage status</span><span class="v" id="r-ls">-</span></div>
+</div>
+
+<div class="section">
+  <h2>🧪 测试动作</h2>
+  <button id="b-test1" style="background:#388e3c;">① 最纯净测试（推荐先点）</button>
+  <button id="b-test2" class="warn">② 测 Notification.permission</button>
+  <button id="b-test3" class="warn">③ 测 getSubscription</button>
+  <button id="b-test4" class="warn">④ 模拟 click handler（同 v1.4.11.3）</button>
+  <button id="b-test5" class="danger">⑤ 强制 reload（清除 iOS 缓存）</button>
+  <button id="b-test6" class="danger">⑥ 卸载 SW（重置所有状态）</button>
+</div>
+
+<div class="section">
+  <h2>📋 实时日志</h2>
+  <div id="log">点击按钮开始测试…</div>
+</div>
+
+<script src="js/ios-badge.js"></script>
+<script>
+const log = document.getElementById('log');
+function addLog(msg, color) {
+  const t = new Date().toLocaleTimeString('zh-CN');
+  const line = `[${t}] ${msg}\n`;
+  log.textContent = line + log.textContent;
+  if (color) log.style.color = color;
+}
+function $(id) { return document.getElementById(id); }
+
+function detectIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function isStandalone() {
+  if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+  if (typeof navigator.standalone !== 'undefined' && navigator.standalone === true) return true;
+  return false;
+}
+
+async function refresh() {
+  $('r-ios').textContent = detectIOS() ? '✅ 是' : '❌ 否';
+  $('r-ios').className = 'v ' + (detectIOS() ? 'green' : 'red');
+  $('r-standalone').textContent = isStandalone() ? '✅ standalone' : '⚠️ 浏览器';
+  $('r-standalone').className = 'v ' + (isStandalone() ? 'green' : 'yellow');
+  $('r-notif').textContent = 'Notification' in window ? '✅' : '❌';
+  $('r-notif').className = 'v ' + ('Notification' in window ? 'green' : 'red');
+  $('r-push').textContent = 'PushManager' in window ? '✅' : '❌';
+  $('r-push').className = 'v ' + ('PushManager' in window ? 'green' : 'red');
+  $('r-sw').textContent = 'serviceWorker' in navigator ? '✅' : '❌';
+  $('r-sw').className = 'v ' + ('serviceWorker' in navigator ? 'green' : 'red');
+  $('r-ctrl').textContent = navigator.serviceWorker.controller ? '✅ 有' : '⚠️ 无';
+  $('r-ctrl').className = 'v ' + (navigator.serviceWorker.controller ? 'green' : 'yellow');
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    $('r-scope').textContent = reg ? reg.scope : '(none)';
+  } catch (e) { $('r-scope').textContent = 'err'; }
+
+  const perm = (typeof Notification !== 'undefined' && Notification) ? Notification.permission : '?';
+  $('r-perm').textContent = perm;
+  $('r-perm').className = 'v ' + (
+    perm === 'granted' ? 'green' :
+    perm === 'denied' ? 'red' : 'yellow'
+  );
+
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    $('r-sub').textContent = sub ? '✅ ' + sub.endpoint.slice(0, 40) + '...' : '❌ 无';
+    $('r-sub').className = 'v ' + (sub ? 'green' : 'red');
+  } catch (e) {
+    $('r-sub').textContent = 'err: ' + e.message;
+  }
+
+  try { $('r-ls').textContent = localStorage.getItem('push_status_v1') || '(none)'; } catch (_) {}
+
+  // iOS PWA 桌面角标信息
+  const ua = navigator.userAgent;
+  const m = ua.match(/OS (\d+)_(\d+)/);
+  const iosVer = m ? (parseInt(m[1], 10) + parseInt(m[2], 10) / 10) : 0;
+  $('r-iosver').textContent = iosVer ? 'iOS ' + iosVer.toFixed(1) + (iosVer >= 16.4 ? ' ✅' : ' < 16.4 ❌') : '(非 iOS)';
+  $('r-iosver').className = 'v ' + (iosVer >= 16.4 ? 'green' : 'yellow');
+
+  const hasBadgeAPI = typeof navigator !== 'undefined' && typeof navigator.setAppBadge === 'function';
+  $('r-badge-api').textContent = hasBadgeAPI ? '✅ 支持' : '❌ 不支持';
+  $('r-badge-api').className = 'v ' + (hasBadgeAPI ? 'green' : 'red');
+
+  if (window.IOSBadge) {
+    const avail = IOSBadge.isAvailable();
+    $('r-badge-avail').textContent = avail ? '✅ 可显示' : '❌ 当前环境不可用';
+    $('r-badge-avail').className = 'v ' + (avail ? 'green' : 'red');
+    $('r-badge-cur').textContent = String(IOSBadge.getCurrent());
+    try {
+      $('r-badge-ls').textContent = localStorage.getItem(IOSBadge._STORAGE_KEY) || '(none)';
+    } catch (_) { $('r-badge-ls').textContent = 'err'; }
+  } else {
+    $('r-badge-avail').textContent = '❌ IOSBadge 模块未加载';
+    $('r-badge-avail').className = 'v red';
+  }
+}
+
+// 测试 1：最纯净测试 - 完全在 click handler 同步路径调用
+$('b-test1').addEventListener('click', function () {
+  addLog('--- 测试 1 开始（最纯净调用）---', '#4fc3f7');
+  addLog('点击时间: ' + Date.now());
+  addLog('click handler 同步路径开始');
+  addLog('直接调用 Notification.requestPermission()...');
+  // ⚠️ 关键：直接调用，不 await 任何前置
+  const p = Notification.requestPermission();
+  addLog('requestPermission() 返回 promise，调用时间: ' + Date.now());
+  p.then(function (result) {
+    addLog('✅ promise resolve: ' + result);
+    addLog('resolve 时间: ' + Date.now() + '（间隔 = 用户决定时间）');
+  }, function (err) {
+    addLog('❌ promise reject: ' + (err && err.name));
+  });
+});
+
+// 测试 2：仅查询当前权限
+$('b-test2').addEventListener('click', function () {
+  addLog('--- 测试 2：当前权限 ---', '#4fc3f7');
+  addLog('Notification.permission = ' + Notification.permission);
+  if (Notification.permission === 'denied') {
+    addLog('⚠️ 已永久 deny，iOS 不会再弹窗', '#ef5350');
+    addLog('解决办法：iPhone 设置 → 通知 → 工地导航 → 允许通知', '#ef5350');
+  } else if (Notification.permission === 'granted') {
+    addLog('✅ 已授权，可直接 subscribe', '#66bb6a');
+  } else {
+    addLog('default 状态，可弹窗', '#ffd54f');
+  }
+});
+
+// 测试 3：检查现有订阅
+$('b-test3').addEventListener('click', async function () {
+  addLog('--- 测试 3：现有订阅 ---', '#4fc3f7');
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    addLog('SW registration: ' + (reg ? '✅ ' + reg.scope : '❌ 无'));
+    if (reg) {
+      const sub = await reg.pushManager.getSubscription();
+      addLog('pushManager.getSubscription(): ' + (sub ? '✅ 有' : '❌ 无'));
+      if (sub) {
+        addLog('endpoint: ' + sub.endpoint);
+      }
+    }
+  } catch (e) {
+    addLog('❌ 错误: ' + e.message);
+  }
+});
+
+// 测试 4：完全模拟 v1.4.11.3 click handler 流程
+$('b-test4').addEventListener('click', async function () {
+  addLog('--- 测试 4：v1.4.11.3 click handler 流程模拟 ---', '#4fc3f7');
+  addLog('⚠️ 注意：async click handler 在 iOS 17+ 会有问题');
+  const currentPerm = Notification.permission;
+  addLog('当前权限: ' + currentPerm);
+  if (currentPerm === 'denied') {
+    addLog('已 deny，不会弹窗', '#ef5350');
+    return;
+  }
+  if (currentPerm === 'default') {
+    addLog('正在调用 Notification.requestPermission()...');
+    try {
+      const result = await new Promise(function (resolve) {
+        Notification.requestPermission().then(resolve, function () { resolve('denied'); });
+      });
+      addLog('结果: ' + result, result === 'granted' ? '#66bb6a' : '#ef5350');
+    } catch (e) {
+      addLog('❌ 错误: ' + e.message, '#ef5350');
+    }
+  } else {
+    addLog('已 granted，跳过权限请求', '#66bb6a');
+  }
+});
+
+// 测试 5：强制 reload
+$('b-test5').addEventListener('click', function () {
+  if (confirm('确定要 reload 吗？这会清除当前 JS context')) {
+    addLog('reload...');
+    location.reload();
+  }
+});
+
+// 测试 6：卸载 SW
+$('b-test6').addEventListener('click', async function () {
+  if (!confirm('⚠️ 确定卸载 SW？这会让 PWA 暂时不能用通知功能，需要 reload 后重新走一遍流程')) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) {
+      await r.unregister();
+      addLog('unregister: ' + r.scope);
+    }
+    // 清除所有 push 相关缓存
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (const k of keys) await caches.delete(k);
+      addLog('清理缓存: ' + keys.length + ' 个');
+    }
+    // 清除 localStorage
+    try {
+      localStorage.removeItem('push_status_v1');
+      localStorage.removeItem('push_subscription_v1');
+      try { sessionStorage.removeItem('m94-push-reload-guard'); } catch (_) {}
+      addLog('清理 localStorage');
+    } catch (_) {}
+    addLog('✅ 完成。请 reload 后再试。', '#66bb6a');
+  } catch (e) {
+    addLog('❌ 错误: ' + e.message, '#ef5350');
+  }
+});
+
+refresh();
+addLog('页面已加载，点按钮开始测试', '#4fc3f7');
+setInterval(refresh, 2000);
+
+// ==================== iOS PWA 桌面角标测试 ====================
+$('b-badge-set5').addEventListener('click', async function () {
+  if (!window.IOSBadge) { addLog('❌ IOSBadge 模块未加载', '#ef5350'); return; }
+  addLog('--- 桌面角标：设 5 ---', '#4fc3f7');
+  const ok = await IOSBadge.setBadge(5);
+  addLog('setBadge(5) 返回: ' + ok + (IOSBadge.isAvailable() ? ' (主屏幕图标应显示 5)' : ' (当前环境不可见)'),
+         ok ? '#66bb6a' : '#ef5350');
+  refresh();
+});
+
+$('b-badge-set1').addEventListener('click', async function () {
+  if (!window.IOSBadge) { addLog('❌ IOSBadge 模块未加载', '#ef5350'); return; }
+  addLog('--- 桌面角标：设 1 ---', '#4fc3f7');
+  const ok = await IOSBadge.setBadge(1);
+  addLog('setBadge(1) 返回: ' + ok, ok ? '#66bb6a' : '#ef5350');
+  refresh();
+});
+
+$('b-badge-add1').addEventListener('click', async function () {
+  if (!window.IOSBadge) { addLog('❌ IOSBadge 模块未加载', '#ef5350'); return; }
+  addLog('--- 桌面角标：+1 ---', '#4fc3f7');
+  const ok = await IOSBadge.increment();
+  addLog('increment() 返回: ' + ok + ' (current=' + IOSBadge.getCurrent() + ')',
+         ok ? '#66bb6a' : '#ef5350');
+  refresh();
+});
+
+$('b-badge-clear').addEventListener('click', async function () {
+  if (!window.IOSBadge) { addLog('❌ IOSBadge 模块未加载', '#ef5350'); return; }
+  addLog('--- 桌面角标：清零 ---', '#4fc3f7');
+  const ok = await IOSBadge.clear();
+  addLog('clear() 返回: ' + ok + (IOSBadge.isAvailable() ? ' (主屏幕角标应消失)' : ''),
+         ok ? '#66bb6a' : '#ef5350');
+  refresh();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>导航</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <script src="js/amap-loader.js"></script>
+    <style>
+    /* 禁行区红光警报样式 */
+    #prohibit-alert-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* 穿透点击，不影响地图操作 */
+        z-index: 9999; /* 确保在地图最上层 */
+        display: none; /* 默认隐藏 */
+    }
+
+    .alert-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* 四周往内泛红光的效果 */
+        box-shadow: inset 0 0 80px rgba(255, 0, 0, 0.6); 
+        background-color: rgba(255, 0, 0, 0.15); 
+        animation: pulseAlert 1.5s infinite; /* 呼吸灯闪烁动画 */
+    }
+
+    .alert-banner {
+            position: absolute;
+            top: 110px; /* 默认首页位置 */
+            left: 50%;
+            transform: translateX(-50%);
+            color: red;
+            font-size: 16px;
+            font-weight: bold;
+                /* background: rgba(255, 255, 255, 0.9); */
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: row;      /* 强制子元素横向排列 */
+            align-items: center;
+            justify-content: center;  /* 水平居中对齐 */
+            /* 核心：防止文字换行 */
+            white-space: nowrap;      /* 强制文字在一行内显示，不自动折行 */
+    }
+
+    .icon-wrapper {
+                width: 22px; height: 22px; background: #ff4d4f; border-radius: 50%;
+                color: white; font-weight: bold; display: flex; 
+                align-items: center; justify-content: center; margin-right: 10px;
+            }
+
+    @keyframes pulseAlert {
+        0% { opacity: 0.6; }
+        50% { opacity: 1; }
+        100% { opacity: 0.6; }
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <!-- 地图容器 -->
+        <div id="navigation-map-container">
+            <!-- 导航提示卡片 -->
+            <div class="navigation-tip-card" id="navigation-tip-card">
+                <div class="tip-card-content">
+                    <div class="tip-direction-icon">
+                        <img id="tip-direction-img" src="images/工地数字导航小程序切图/司机/2X/导航/左转.png" alt="左转">
+                    </div>
+                    <div class="tip-info">
+                        <div class="tip-main-text">
+                            <span class="tip-distance-ahead" id="tip-distance-ahead">20</span>
+                            <span class="tip-distance-unit">米后</span>
+                            <span class="tip-action" id="tip-action-text">左转</span>
+                        </div>
+                        <div class="tip-divider"></div>
+                        <div class="tip-details">
+                            <span class="tip-remaining-label" id="tip-remaining-label">剩余</span>
+                            <span class="tip-remaining-value">
+                                <span id="tip-remaining-distance">123</span>
+                                <span id="tip-remaining-unit">米</span>
+                            </span>
+                            <span class="tip-estimated-label">预计</span>
+                            <span class="tip-estimated-value">
+                                <span id="tip-estimated-time">2</span> 分钟
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 禁行区警报 UI 层 (默认隐藏) -->
+            <div id="prohibit-alert-layer" style="display: none;">
+                <!-- 红色边缘发光遮罩 -->
+                <div class="alert-overlay"></div>
+                <!-- 顶部提示文字 -->
+                <div class="alert-banner">
+                <div class="icon-wrapper">!</div> 注意！已进入禁行区域！
+                </div>
+            </div>
+
+        <!-- 底部信息卡片 -->
+        <div class="navigation-card" id="navigation-card">
+            <!-- 目的地信息（导航中显示） -->
+            <div class="destination-info">
+                <button class="destination-close-btn" id="destination-close-btn">
+                    <img src="images/工地数字导航小程序切图/司机/2X/导航/关闭.png" alt="关闭">
+                </button>
+                <div class="destination-content">
+                    <div class="destination-org" id="destination-org"></div>
+                    <div class="destination-name" id="destination-name"></div>
+                    <div class="destination-stats">
+                        <span class="distance"><span id="destination-distance"></span> 米</span>
+                        <span class="separator">|</span>
+                        <span class="time"><span id="destination-time"></span> 分钟</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 路线选择器 -->
+            <div class="route-selector">
+                <div class="location-inputs-wrapper">
+                    <div class="location-inputs">
+                        <div class="location-item">
+                            <i class="fas fa-circle start-icon"></i>
+                            <input type="text" placeholder="输入起点位置" id="nav-start-location" readonly>
+                        </div>
+                        <div class="divider-line">
+                            <button class="swap-btn" id="nav-swap-btn">
+                                <img src="images/工地数字导航小程序切图/司机/2X/导航/切换起点终点.png" alt="切换起点终点">
+                            </button>
+                        </div>
+                        <div class="waypoints-container" id="nav-waypoints-container">
+                            <!-- 途径点将动态添加 -->
+                        </div>
+                        <div class="location-item">
+                            <i class="fas fa-circle end-icon"></i>
+                            <input type="text" placeholder="选择目的地" id="nav-end-location" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="add-waypoint">
+                    <div class="add-btn" id="nav-add-waypoint-btn">
+                        <img src="images/工地数字导航小程序切图/司机/2X/导航/添加途径点.png" alt="添加途径点">
+                    </div>
+                    <div class="waypoint-label">途经点</div>
+                </div>
+            </div>
+
+            <!-- 路线信息 -->
+            <div class="route-info">
+                <div class="route-info-item">
+                    <span class="info-label">全程</span>
+                    <span class="info-value" id="route-distance">123</span>
+                    <span class="info-unit">米</span>
+                </div>
+                <div class="route-info-item">
+                    <span class="info-label">预计时间</span>
+                    <span class="info-value" id="route-time">2</span>
+                    <span class="info-unit">分钟</span>
+                </div>
+            </div>
+
+            <!-- 导航按钮 -->
+            <button class="start-navigation-btn" id="start-navigation-btn">
+                导航
+            </button>
+        </div>
+
+        <!-- 退出导航确认弹窗 -->
+        <div class="exit-navigation-modal" id="exit-navigation-modal">
+            <div class="exit-modal-content">
+                <div class="exit-modal-text">确定要退出导航吗？</div>
+                <div class="exit-buttons">
+                    <button class="exit-cancel-btn" id="exit-cancel-btn">取消</button>
+                    <button class="exit-confirm-btn" id="exit-confirm-btn">退出导航</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航完成弹窗 -->
+        <div class="navigation-complete-modal" id="navigation-complete-modal">
+            <div class="complete-modal-content">
+                <img src="images/工地数字导航小程序切图/司机/2X/导航/导航结束.png" alt="导航结束" class="complete-icon">
+                <div class="complete-info">
+                    <div class="complete-row">
+                        <span class="complete-label">总行程</span>
+                        <span class="complete-value">
+                            <span id="complete-distance">236</span>
+                            <span class="complete-unit">m</span>
+                        </span>
+                    </div>
+                    <div class="complete-row">
+                        <span class="complete-label">花费</span>
+                        <span class="complete-value">
+                            <span id="complete-time">5</span>
+                            <span class="complete-unit">min</span>
+                        </span>
+                    </div>
+                </div>
+                <button class="complete-finish-btn" id="complete-finish-btn">导航结束</button>
+            </div>
+        </div>
+
+        <!-- 远距离提示弹窗：跳转地图导航 -->
+        <div class="amap-redirect-modal" id="amap-redirect-modal">
+            <div class="amap-redirect-content">
+                <div class="amap-redirect-title">您距离工地较远</div>
+                <div class="amap-redirect-desc" id="amap-redirect-desc">距离最近的出入口约 <strong id="amap-gate-distance">--</strong>，建议先导航到 <strong id="amap-gate-name">--</strong></div>
+                <div class="amap-redirect-buttons">
+                    <button class="amap-btn-secondary" id="amap-continue-btn">继续工地内导航</button>
+                    <button class="amap-btn-primary" id="amap-open-btn">打开地图导航</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/coordinate-convert.js"></script>
+    <script src="js/api-data-converter.js"></script>
+    <script src="js/segment-splitter.js"></script>
+    <script src="js/point-name-utils.js"></script>
+    <script src="js/map/base-map-renderer.js"></script>
+    <script src="js/kml-handler.js"></script>
+    <script src="js/driver-road-status.js"></script>
+    <script src="js/kml-route-planning.js"></script>
+    <script src="js/xunfeiTTS.js"></script>
+
+    <!-- 新的模块化导航系统 -->
+    <script src="js/navigation/nav-data-store.js"></script>
+    <script src="js/navigation/nav-tts.js"></script>
+    <script src="js/navigation/nav-gps.js"></script>
+    <script src="js/navigation/nav-renderer.js"></script>
+    <script src="js/navigation/nav-guidance.js"></script>
+    <script src="js/navigation/nav-core.js"></script>
+    <script src="js/navigation/nav-ui.js"></script>
+    <script src="js/vehicle-location-reporter.js"></script>
+    <script src="js/virtual-gps-simulator.js"></script>
+
+    <!-- 初始化脚本 -->
+    <script>
+        // 注意：window.kmlLayers 已在 config.js 中声明，这里直接使用
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', async function() {
+            console.log('导航页面加载完成，开始初始化...');
+
+            try {
+                if (typeof window.ensureAmapReady === 'function') {
+                    await window.ensureAmapReady();
+                }
+            } catch (error) {
+                alert('高德地图加载失败，请稍后重试');
+                return;
+            }
+
+            // 【关键修复】等待 DOM 完全渲染后再初始化地图
+            // 使用 requestAnimationFrame 确保浏览器完成布局计算
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    initNavigation();
+                });
+            });
+
+            if (typeof window.VehicleLocationReporter !== 'undefined') {
+                window.VehicleLocationReporter.init();
+                window.VehicleLocationReporter.start();
+            }
+
+            // ===== 下面是新增的：禁行区警报监听 =====
+            const alertLayer = document.getElementById('prohibit-alert-layer');
+
+            
+
+            if (alertLayer) {
+                window.addEventListener('fenceAlert', function(e) {
+                    const data = e.detail;
+                    if (data.fenceType === 'prohibit') {
+                        if (data.eventType === 'enter') {
+                            // 进入禁行区，显示红光
+                            alertLayer.style.display = 'block';
+                            // 可选：调用你 nav-tts.js 里的语音播报
+                            // window.playTTS && window.playTTS("注意，已进入禁行区域");
+                        } else if (data.eventType === 'leave') {
+                            // 离开禁行区，隐藏红光
+                            alertLayer.style.display = 'none';
+                        }
+                    }
+                });
+            }
+            // =====================================
+        });
+
+        function initNavigation() {
+            // 检查地图容器是否已准备好
+            const mapContainer = document.getElementById('navigation-map-container');
+            if (!mapContainer || mapContainer.offsetWidth === 0 || mapContainer.offsetHeight === 0) {
+                console.warn('[导航页面] 地图容器尺寸未确定，等待100ms后重试...');
+                setTimeout(initNavigation, 100);
+                return;
+            }
+
+            console.log('[导航页面] ✓ 地图容器尺寸:', mapContainer.offsetWidth, 'x', mapContainer.offsetHeight);
+
+            // 1. 初始化导航核心
+            const initSuccess = NavCore.init('navigation-map-container');
+            if (!initSuccess) {
+                console.error('导航核心初始化失败');
+                alert('导航系统初始化失败，请刷新页面重试');
+                return;
+            }
+
+            // 2. 初始化UI
+            NavUI.init();
+
+            // 【简化】NavCore.init 内部的 onMapComplete 会处理所有初始化
+            // 不再在这里额外监听 complete 事件，避免重复处理
+
+            console.log('导航系统初始化完成');
+        }
+
+        // 页面卸载时清理资源
+        window.addEventListener('beforeunload', function() {
+            NavCore.cleanup();
+        });
+    </script>
+</body>
+</html>

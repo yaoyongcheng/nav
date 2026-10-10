@@ -1,0 +1,410 @@
+/*
+ * main-9.4 / 相机采集浮层（拍照 / 相册 / 录像）
+ * =====================================
+ * 独立 CSS，不污染 css/login.css / css/style.css。
+ * 设计规范沿用 css/pwa-install.css（该文件头部注释即项目浮层规范），要点：
+ *
+ *  - 不用 100vh（iOS Safari 高度 bug），用 max-height: 80vh
+ *  - safe-area-inset-bottom 给内部容器，视觉中心不偏移
+ *  - 关闭走 display: none，彻底移出命中测试，不会吃掉 canvas 触摸事件
+ *  - 浮层自身 transform 做滑入，不引入 rAF 循环
+ *  - 兼容 prefers-reduced-motion（关闭过渡动画）
+ *
+ * ⚠️ z-index 取 10001 / 10002 —— 必须高于 pwa-install.css 的 9999 / 10000，
+ *    否则 pwa-install.js 在页面加载 3s 后自动弹出的安装引导会盖住相机浮层。
+ */
+
+/* ============ 遮罩 / 抽屉 ============ */
+
+.cam-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 10001;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cam-mask.is-open {
+    display: block;
+    animation: cam-fade-in 200ms ease-out;
+}
+
+.cam-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    color: #1e293b;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+    z-index: 10002;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    max-height: 80vh;
+    max-height: calc(80vh - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+}
+
+.cam-sheet.is-open {
+    display: block;
+    animation: cam-slide-up 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.cam-sheet-inner {
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    max-height: inherit;
+}
+
+.cam-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 44px;              /* 无障碍最小触摸目标 */
+    height: 44px;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #64748b;
+    border-radius: 10px;
+    padding: 0;
+    z-index: 10;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.cam-close:hover  { background: #f1f5f9; color: #1e293b; }
+.cam-close:active { background: #e2e8f0; color: #0f172a; }
+
+.cam-title {
+    margin: 0 40px 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.3;
+}
+
+.cam-hint {
+    margin: 0 0 14px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #64748b;
+}
+
+.cam-hint[hidden] { display: none; }
+
+.cam-meta {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #475569;
+    word-break: break-all;
+}
+
+.cam-note {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ============ 三个入口按钮 ============ */
+
+.cam-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.cam-action {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 6px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cam-action:active {
+    background: #eef2f7;
+    border-color: #cbd5e1;
+}
+
+.cam-action-icon  { font-size: 26px; line-height: 1; }
+.cam-action-label { font-size: 14px; font-weight: 600; color: #0f172a; }
+.cam-action-sub   { font-size: 11px; color: #94a3b8; }
+
+/* ============ 预览区 ============ */
+
+.cam-stage {
+    position: relative;
+    background: #000000;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cam-video {
+    display: block;
+    width: 100%;
+    max-height: 50vh;
+    background: #000000;
+    object-fit: contain;
+}
+
+.cam-preview-img {
+    display: block;
+    width: 100%;
+    max-height: 50vh;
+    object-fit: contain;
+}
+
+.cam-loading {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    font-size: 13px;
+    pointer-events: none;
+}
+
+.cam-loading[hidden] { display: none; }
+
+.cam-rec-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    border-radius: 999px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.cam-rec-badge[hidden] { display: none; }
+
+.cam-rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff4d4f;
+    animation: cam-rec-blink 1s steps(2, start) infinite;
+}
+
+/* play() 被 iOS 自动播放策略拒绝时的兜底覆盖层 */
+.cam-tap-play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    padding: 12px 20px;
+    background: rgba(43, 127, 255, 0.92);
+    color: #ffffff;
+    border: none;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+
+.cam-tap-play:active { background: #0052d9; }
+
+@keyframes cam-rec-blink {
+    to { visibility: hidden; }
+}
+
+/* ============ 按钮 ============ */
+
+.cam-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.cam-btn {
+    flex: 1;
+    padding: 13px 16px;
+    background: #2b7fff;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+
+.cam-btn:active { background: #0052d9; }
+
+.cam-btn.is-recording { background: #ff4d4f; }
+.cam-btn.is-recording:active { background: #d9363e; }
+
+.cam-btn-secondary {
+    flex: 1;
+    padding: 13px 16px;
+    background: #f1f5f9;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+}
+
+.cam-btn-secondary:active { background: #e2e8f0; }
+
+.cam-btn:disabled,
+.cam-btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============ 降级 / 错误提示块 ============ */
+
+.cam-fallback {
+    text-align: center;
+    padding: 8px 0 4px;
+}
+
+.cam-fallback-icon {
+    font-size: 34px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.cam-fallback-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.cam-fallback-reason {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #475569;
+    text-align: left;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+/* ============ Toast（与 fb-toast 同形态，独立命名空间）============ */
+
+.cam-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 90px;
+    transform: translateX(-50%);
+    z-index: 10003;
+    max-width: calc(100vw - 48px);
+    padding: 10px 16px;
+    background: rgba(15, 23, 42, 0.88);
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* ============ 动画 ============ */
+
+@keyframes cam-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes cam-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cam-mask.is-open,
+    .cam-sheet.is-open,
+    .cam-rec-dot {
+        animation: none;
+    }
+}
+
+/* ============ 桌面端宽度限制，不至于占满屏 ============ */
+
+@media (min-width: 640px) {
+    .cam-sheet {
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        width: 480px;
+        max-width: calc(100vw - 32px);
+        border-radius: 16px;
+        bottom: 32px;
+    }
+    .cam-sheet.is-open {
+        animation: cam-slide-up-desktop 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    @keyframes cam-slide-up-desktop {
+        from { transform: translate(-50%, 100%); }
+        to   { transform: translate(-50%, 0); }
+    }
+}
+
+/* ============ 窄屏：三宫格改为单列，避免文字拥挤 ============ */
+
+@media (max-width: 360px) {
+    .cam-actions { flex-direction: column; }
+    .cam-action {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+    .cam-action-icon { font-size: 22px; }
+    .cam-action-sub { margin-left: auto; }
+}

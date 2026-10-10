@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1976d2">
+  <title>离线状态 - 工地数字导航</title>
+  <link rel="stylesheet" href="css/pwa-install.css">
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e3f2fd, #f5f5f5);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      padding: 24px;
+    }
+    .offline-card {
+      max-width: 360px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+    .offline-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: #fff3e0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      color: #1a1a1a;
+    }
+    p {
+      margin: 0 0 20px;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .retry-btn {
+      display: inline-block;
+      padding: 10px 24px;
+      background: #1976d2;
+      color: #fff;
+      border-radius: 24px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+    }
+    .retry-btn:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <div class="offline-icon">📡</div>
+    <h1>当前无网络连接</h1>
+    <p>请检查您的网络设置后重试。<br>已缓存的页面仍可访问。</p>
+    <button class="retry-btn" onclick="location.reload()">重新加载</button>
+  </div>
+</body>
+</html>

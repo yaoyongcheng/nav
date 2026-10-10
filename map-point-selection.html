@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>地图选点</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- 高德地图API -->
+    <script src="js/amap-loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 全屏地图容器 -->
+        <div id="map-container"></div>
+
+        <!-- 底部信息面板（默认隐藏） -->
+        <div class="map-selection-panel" id="map-selection-panel">
+            <!-- 点信息面板 -->
+            <div class="panel-point-info" id="panel-point-info" style="display: none;">
+                <div class="panel-header">
+                    <div class="panel-content">
+                        <div class="panel-title-row">
+                            <h3 class="panel-title" id="point-name">点位名称</h3>
+                            <span class="panel-project-name" id="point-project-name">项目名称</span>
+                        </div>
+                        <p class="panel-subtitle" id="point-distance">距离 125 米</p>
+                    </div>
+                    <button class="panel-close-btn" id="panel-close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="panel-actions" id="point-panel-actions">
+                    <button class="panel-btn panel-btn-outline" id="point-cancel-btn">
+                        <span>取消</span>
+                    </button>
+                    <button class="panel-btn panel-btn-primary" id="point-confirm-btn">
+                        <span>添加</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 面信息面板 -->
+            <div class="panel-polygon-info" id="panel-polygon-info" style="display: none;">
+                <div class="panel-header">
+                    <div class="panel-content">
+                        <div class="panel-title-row">
+                            <h3 class="panel-title" id="polygon-name">区域名称</h3>
+                            <span class="panel-project-name" id="polygon-project-name">项目名称</span>
+                        </div>
+                        <p class="panel-subtitle" id="polygon-area">距离 125 米</p>
+                    </div>
+                    <button class="panel-close-btn" id="panel-polygon-close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- 区域内点位列表 -->
+                <div class="panel-points-list" id="panel-points-list">
+                    <!-- 点位列表将动态插入 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的脚本 -->
+    <script src="js/config.js"></script>
+    <script src="js/coordinate-convert.js"></script>
+    <script src="js/segment-splitter.js"></script>
+    <script src="js/map-core.js"></script>
+    <script src="js/point-name-utils.js"></script>
+    <script src="js/map/base-map-renderer.js"></script>
+    <script src="js/kml-handler.js"></script>
+    <script src="js/driver-road-status.js"></script>
+    <script src="js/browser-toolbar-detect.js"></script>
+    <script src="js/ui-utils.js"></script>
+    <script src="js/api-data-converter.js"></script>
+    <script src="js/map-point-selection.js"></script>
+</body>
+</html>

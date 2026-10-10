@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>管理员 - 运输管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/admin_transport.css">
+</head>
+<body>
+    <div class="container admin-container">
+        <!-- 页面内容 -->
+        <div class="transport-page">
+            <!-- 顶部标签切换 -->
+            <div class="transport-tabs">
+                <div class="tab-item active" data-tab="vehicle">车辆进出管理</div>
+                <div class="tab-item" data-tab="task">运输任务管理</div>
+            </div>
+
+            <!-- 车辆进出管理 -->
+            <div class="tab-content" id="vehicle-tab">
+                <div class="tab-content-wrapper">
+                    <!-- 进出统计 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>进出统计</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="stats-content expanded">
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">临时车辆车次</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">固定车辆车次</div>
+                                </div>
+                            </div>
+                            <div class="date-selector" id="vehicleDateSelector">
+                                <span id="vehicleDateText">今日</span>
+                                <i class="fas fa-caret-down"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 现场车辆统计 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <i class="fas fa-car"></i>
+                            <span>现场车辆统计</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="stats-content expanded">
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">临时车辆</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">固定车辆</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 车辆列表 -->
+                    <div class="vehicle-list expanded">
+                        <div class="list-header">
+                            <div class="header-col">车辆属性</div>
+                            <div class="header-col">车牌</div>
+                            <div class="header-col">入场时间</div>
+                            <div class="header-col">离场时间</div>
+                        </div>
+                        <div class="list-body">
+                            <!-- 车辆数据将通过API动态加载 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 运输任务管理 -->
+            <div class="tab-content" id="task-tab">
+                <div class="tab-content-wrapper">
+                    <!-- 今日任务统计 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <i class="fas fa-tasks"></i>
+                            <span>今日任务</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="stats-content expanded">
+                            <div class="stats-row-new">
+                                <!-- 左侧：进行中/已完成 -->
+                                <div class="stats-left">
+                                    <div class="stat-item">
+                                        <div class="stat-number">0</div>
+                                        <div class="stat-label">进行中任务</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">0</div>
+                                        <div class="stat-label">已完成任务</div>
+                                    </div>
+                                </div>
+                                <!-- 右侧：任务类型 -->
+                                <div class="stats-right">
+                                    <div class="type-stat-item">
+                                        <span class="type-name">砂石运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                    <div class="type-stat-item">
+                                        <span class="type-name">水泥运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                    <div class="type-stat-item">
+                                        <span class="type-name">钢筋运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 任务列表 -->
+                    <div class="task-list expanded" id="today-task-list">
+                        <div class="list-header">
+                            <div class="header-col">任务类型</div>
+                            <div class="header-col">任务进度</div>
+                            <div class="header-col">任务车辆</div>
+                        </div>
+                        <div class="list-body">
+                            <!-- 今日任务数据将通过API动态加载 -->
+                        </div>
+                    </div>
+
+                    <!-- 历史任务统计 -->
+                    <div class="stats-card" style="margin-top: 16px;">
+                        <div class="stats-header">
+                            <i class="fas fa-history"></i>
+                            <span>历史任务</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="stats-content expanded">
+                            <div class="stats-row-new">
+                                <!-- 左侧：进行中/已完成 -->
+                                <div class="stats-left">
+                                    <div class="stat-item">
+                                        <div class="stat-number">0</div>
+                                        <div class="stat-label">进行中任务</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-number">0</div>
+                                        <div class="stat-label">已完成任务</div>
+                                    </div>
+                                </div>
+                                <!-- 右侧：任务类型 -->
+                                <div class="stats-right">
+                                    <div class="type-stat-item">
+                                        <span class="type-name">砂石运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                    <div class="type-stat-item">
+                                        <span class="type-name">水泥运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                    <div class="type-stat-item">
+                                        <span class="type-name">钢筋运输</span>
+                                        <span class="type-count">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 历史任务列表 -->
+                    <div class="task-list expanded" id="history-task-list">
+                        <div class="list-header">
+                            <div class="header-col">任务类型</div>
+                            <div class="header-col">任务进度</div>
+                            <div class="header-col">任务车辆</div>
+                        </div>
+                        <div class="list-body">
+                            <!-- 历史任务数据将通过API动态加载 -->
+                        </div>
+                    </div>
+
+                    <!-- 新增按钮 -->
+                    <button class="add-task-btn">
+                        <img src="images/工地数字导航小程序切图/管理/2X/任务管理/新增任务.png" alt="新增">
+                        <span>新增</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 任务操作气泡 -->
+            <div class="task-action-popover" id="taskActionPopover">
+                <div class="popover-content">
+                    <div class="popover-item delete" id="popoverDeleteBtn">删除</div>
+                    <div class="popover-item view" id="popoverViewBtn">查看/修改</div>
+                </div>
+            </div>
+
+            <!-- 查看/修改任务页面 -->
+            <div class="sub-page" id="viewTaskPage">
+
+            <!-- 车辆详情上拉卡片 -->
+            <div class="transport-vehicle-detail-sheet" id="transport-vehicle-detail-sheet">
+                <div class="transport-vehicle-detail-panel">
+                    <div class="transport-vehicle-detail-header">
+                        <div class="transport-vehicle-detail-title">详细信息</div>
+                        <button type="button" class="transport-vehicle-detail-close" id="transport-vehicle-detail-close" aria-label="关闭详情">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="transport-vehicle-detail-body">
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">车辆类型</div>
+                            <div class="transport-detail-value" id="transport-detail-vehicle-type">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">任务类型</div>
+                            <div class="transport-detail-value" id="transport-detail-task-type">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">车牌号</div>
+                            <div class="transport-detail-value" id="transport-detail-plate-number">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">定位器</div>
+                            <div class="transport-detail-value" id="transport-detail-locator">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">司机姓名</div>
+                            <div class="transport-detail-value" id="transport-detail-driver-name">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">手机号</div>
+                            <div class="transport-detail-value" id="transport-detail-phone">无</div>
+                        </div>
+                        <div class="transport-detail-section-gap"></div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">离场时间</div>
+                            <div class="transport-detail-value" id="transport-detail-exit-time">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">入场时间</div>
+                            <div class="transport-detail-value" id="transport-detail-entry-time">无</div>
+                        </div>
+                        <div class="transport-detail-row">
+                            <div class="transport-detail-label">任务状态</div>
+                            <div class="transport-detail-value transport-detail-status" id="transport-detail-task-status">无</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <div class="page-content">
+                    <div class="section-title">车辆信息</div>
+                    <div class="form-section vehicle-info-card">
+                        <div class="form-item">
+                            <div class="form-label">定位器</div>
+                            <div class="form-input-wrapper">
+                                <div class="form-input picker-trigger" id="viewLocator" data-value="">--</div>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">车牌号</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" id="viewPlate" value="鄂A888888">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">司机姓名</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" id="viewDriver" value="司机姓名">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">联系方式</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" id="viewContact" value="15388888888">
+                            </div>
+                        </div>
+                    </div>
+        
+                    <div class="section-title">任务信息</div>
+                    <div class="form-section">
+                        <div class="form-item">
+                            <div class="form-label required">任务类型</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="viewTaskType">
+                                    <option value="">选择任务类型</option>
+                                    <option value="1">砂石运输</option>
+                                    <option value="2">水泥运输</option>
+                                    <option value="3">钢筋运输</option>
+                                    <option value="99">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label">任务详情</div>
+                            <div class="textarea-wrapper">
+                                <textarea class="form-textarea" id="viewTaskDetail">请于2025年9月25日将水泥运送至汉韵公馆7号堆料区，请于...</textarea>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">任务起点</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="viewStartPoint">
+                                    <option>中建汉韵公馆 1号楼</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">任务终点</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="viewEndPoint">
+                                    <option>中建汉韵公馆 1号楼</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label required">入场时间</div>
+                            <div class="date-range-row">
+                                <div class="date-input" id="viewEntryStartTime"><img src="images/工地数字导航小程序切图/管理/2X/任务管理/日期选择.png" class="date-icon"> --</div>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label required">离场时间</div>
+                            <div class="date-range-row">
+                                <div class="date-input" id="viewExitStartTime"><img src="images/工地数字导航小程序切图/管理/2X/任务管理/日期选择.png" class="date-icon"> --</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-footer">
+                    <button class="btn btn-cancel" id="viewCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="viewSaveBtn">保存</button>
+                </div>
+            </div>
+        
+            <!-- 新增任务页面 -->
+            <div class="sub-page" id="addTaskPage">
+                <div class="page-content">
+                    <div class="section-title">车辆信息</div>
+                    <div class="form-section vehicle-info-card">
+                        <div class="form-item">
+                            <div class="form-label">定位器</div>
+                            <div class="form-input-wrapper">
+                                <div class="form-input picker-trigger" id="addLocator" data-value="">选择定位器编号</div>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">车牌号</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" placeholder="">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">司机姓名</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" placeholder="">
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">联系方式</div>
+                            <div class="form-input-wrapper">
+                                <input type="text" class="form-input" placeholder="">
+                            </div>
+                        </div>
+                    </div>
+        
+                    <div class="section-title">任务信息</div>
+                    <div class="form-section">
+                        <div class="form-item">
+                            <div class="form-label required">任务类型</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="addTaskType">
+                                    <option value="">选择任务类型</option>
+                                    <option value="1">砂石运输</option>
+                                    <option value="2">水泥运输</option>
+                                    <option value="3">钢筋运输</option>
+                                    <option value="99">其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label">任务详情</div>
+                            <div class="textarea-wrapper">
+                                <textarea class="form-textarea" placeholder=""></textarea>
+                                <div class="char-count">(200字内)</div>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">任务起点</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="addStartPoint">
+                                    <option value="">选择地点</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item">
+                            <div class="form-label required">任务终点</div>
+                            <div class="form-input-wrapper select-wrapper">
+                                <select class="form-input" id="addEndPoint">
+                                    <option value="">选择地点</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label required">入场时间</div>
+                            <div class="date-range-row">
+                                <div class="date-input" id="addEntryStartTime"><img src="images/工地数字导航小程序切图/管理/2X/任务管理/日期选择.png" class="date-icon"> 选择时间</div>
+                            </div>
+                        </div>
+                        <div class="form-item vertical">
+                            <div class="form-label required">离场时间</div>
+                            <div class="date-range-row">
+                                <div class="date-input" id="addExitStartTime"><img src="images/工地数字导航小程序切图/管理/2X/任务管理/日期选择.png" class="date-icon"> 选择时间</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-footer">
+                    <button class="btn btn-cancel" id="addCancelBtn">取消</button>
+                    <button class="btn btn-primary" id="addConfirmBtn">新增</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航 -->
+        <div class="bottom-nav admin-nav">
+            <div class="nav-item" data-page="admin-navigation">
+                <img class="nav-icon-img" 
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-up.png" 
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-down.png" 
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/导航-up.png" 
+                     alt="导航">
+                <div class="nav-text">导航</div>
+            </div>
+            <div class="nav-item" data-page="admin-data">
+                <img class="nav-icon-img"
+                     src="images/工地数字导航小程序切图/管理/2X/导航/监控-up.png"
+                     data-active="images/工地数字导航小程序切图/管理/2X/导航/监控-down.png"
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/导航/监控-up.png"
+                     alt="工地监控">
+                <div class="nav-text">工地监控</div>
+            </div>
+            <div class="nav-item active" data-page="admin-transport">
+                <img class="nav-icon-img" 
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-down.png" 
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-down.png" 
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/运输管理-up.png" 
+                     alt="运输管理">
+                <div class="nav-text">运输管理</div>
+            </div>
+            <div class="nav-item" data-page="admin-profile">
+                <img class="nav-icon-img" 
+                     src="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png" 
+                     data-active="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-down.png" 
+                     data-inactive="images/工地数字导航小程序切图/管理/2X/菜单ICON/我的-up.png" 
+                     alt="我的">
+                <div class="nav-text">我的</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/browser-toolbar-detect.js"></script>
+    <script src="js/admin-message-manager.js"></script>
+    <script src="js/admin-alarm-event-center.js"></script>
+    <script src="js/admin-websocket.js"></script>
+    <script src="js/admin-nav-badge.js"></script>
+
+    <script src="js/admin_transport.js"></script>
+</body>
+</html>
