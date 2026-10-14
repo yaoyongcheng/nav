@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="css/camera-capture.css?v=v1622">
     <link rel="stylesheet" href="css/app-launch.css?v=v1623">
     <link rel="stylesheet" href="css/bluetooth.css?v=v1627">
+    <link rel="stylesheet" href="css/microphone.css?v=v1628">
 
     <!-- ⚠️ TEMP-SHIELD-20260926 (reapplied #2): 临时屏蔽首页扫码登录按钮（用户测试用）
          第 3 次应用：2026-09-26 复测时再次刷新触发 bump-version
@@ -116,6 +117,14 @@
                 <button type="button" class="quick-action-btn" id="qa-bluetooth" aria-label="蓝牙">
                     <span class="qa-icon">📶</span>
                     <span class="qa-label">蓝牙</span>
+                </button>
+                <!-- v1.6.24：新增麦克风入口（js/microphone.js 渲染采集浮层）
+                     与蓝牙不同，麦克风是 Baseline 广泛可用能力，五机型基本都能开；
+                     各机型专属坑（iOS 手势窗口 / 鸿蒙坚盾模式 / 微信内核未就绪 /
+                     旧版国产 ROM 无回调）已在模块内逐一内建。详见 js/microphone.js 头部 -->
+                <button type="button" class="quick-action-btn" id="qa-microphone" aria-label="麦克风">
+                    <span class="qa-icon">🎤</span>
+                    <span class="qa-label">麦克风</span>
                 </button>
             </div>
         </div>
@@ -347,9 +356,10 @@
     <!-- 外部 App 唤起（v1.6.22：高德 / 应用商店，5 机型适配；必须在 login.js 之前） -->
     <script src="js/app-launch.js?v=v1625"></script>
     <script src="js/bluetooth.js?v=v1627"></script>
+    <script src="js/microphone.js?v=v1628"></script>
     <!-- ⚠️ login.js 必须带 ?v=，否则命中 SW 的 PRECACHE 条目走 cache-first，
          永远返回旧版（v1.6.23 加蓝牙入口时实测踩到：无参数请求返回 66203B 旧版，
          带参数返回 66766B 新版）。同 js/camera-capture.js / js/app-launch.js 的约定。 -->
-    <script src="js/login.js?v=v1626"></script>
+    <script src="js/login.js?v=v1629"></script>
 </body>
 </html>

@@ -241,7 +241,7 @@
  * - 版本号升级让旧缓存失效
  */
 
-const SW_VERSION = 'v20261014-d916de606436';
+const SW_VERSION = 'v20261014-f5a8f571cf4d';
 const STATIC_CACHE = `static-${SW_VERSION}`;
 const RUNTIME_CACHE = `runtime-${SW_VERSION}`;
 const CDN_CACHE = `cdn-${SW_VERSION}`;
@@ -284,7 +284,10 @@ const PRECACHE_URLS = [
   './css/app-launch.css',
   // v1.6.23 新增：蓝牙连接模块（同上，必须预缓存）
   './js/bluetooth.js',
-  './css/bluetooth.css'
+  './css/bluetooth.css',
+  // v1.6.24 新增：麦克风采集模块（同上，必须预缓存）
+  './js/microphone.js',
+  './css/microphone.css'
 ];
 
 // CDN 域名白名单（这些资源缓存到专用 CDN_CACHE）

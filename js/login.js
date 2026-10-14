@@ -2031,6 +2031,7 @@ function initQuickActions() {
     const btnCamera = document.getElementById('qa-camera');
     const btnLaunch = document.getElementById('qa-app-launch');
     const btnBluetooth = document.getElementById('qa-bluetooth');
+    const btnMicrophone = document.getElementById('qa-microphone');
 
     if (btnForm) {
         btnForm.addEventListener('click', function() {
@@ -2098,6 +2099,19 @@ function initQuickActions() {
                 window.BluetoothPanel.open();
             } else {
                 console.warn('[quick-actions] BluetoothPanel API 未就绪');
+            }
+        });
+    }
+
+    // v1.6.24：麦克风入口（getUserMedia 采集浮层）。
+    // ⚠️ 同 #qa-camera：只在此处绑定一次，js/microphone.js 内部不重复绑定 click。
+    //    该模块自带能力检测与分机型引导，不在此处拦截。
+    if (btnMicrophone) {
+        btnMicrophone.addEventListener('click', function() {
+            if (window.MicrophonePanel && typeof window.MicrophonePanel.open === 'function') {
+                window.MicrophonePanel.open();
+            } else {
+                console.warn('[quick-actions] MicrophonePanel API 未就绪');
             }
         });
     }
