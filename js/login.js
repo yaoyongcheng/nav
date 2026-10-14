@@ -2032,6 +2032,7 @@ function initQuickActions() {
     const btnLaunch = document.getElementById('qa-app-launch');
     const btnBluetooth = document.getElementById('qa-bluetooth');
     const btnMicrophone = document.getElementById('qa-microphone');
+    const btnGeoCheck = document.getElementById('qa-geo-check');
 
     if (btnForm) {
         btnForm.addEventListener('click', function() {
@@ -2112,6 +2113,18 @@ function initQuickActions() {
                 window.MicrophonePanel.open();
             } else {
                 console.warn('[quick-actions] MicrophonePanel API 未就绪');
+            }
+        });
+    }
+
+    // v1.6.25：定位检测入口（Geolocation 可用性验证 + 坐标系判定）。
+    // ⚠️ 同 #qa-camera：只在此处绑定一次，js/geo-check.js 内部不重复绑定 click。
+    if (btnGeoCheck) {
+        btnGeoCheck.addEventListener('click', function() {
+            if (window.GeoCheckPanel && typeof window.GeoCheckPanel.open === 'function') {
+                window.GeoCheckPanel.open();
+            } else {
+                console.warn('[quick-actions] GeoCheckPanel API 未就绪');
             }
         });
     }

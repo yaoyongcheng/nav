@@ -241,7 +241,7 @@
  * - 版本号升级让旧缓存失效
  */
 
-const SW_VERSION = 'v20261014-f5a8f571cf4d';
+const SW_VERSION = 'v20261014-0ea2d927c60b';
 const STATIC_CACHE = `static-${SW_VERSION}`;
 const RUNTIME_CACHE = `runtime-${SW_VERSION}`;
 const CDN_CACHE = `cdn-${SW_VERSION}`;
@@ -287,7 +287,11 @@ const PRECACHE_URLS = [
   './css/bluetooth.css',
   // v1.6.24 新增：麦克风采集模块（同上，必须预缓存）
   './js/microphone.js',
-  './css/microphone.css'
+  './css/microphone.css',
+  // v1.6.25 新增：定位检测模块 + 其依赖的坐标转换实现（同上，必须预缓存）
+  './js/geo-check.js',
+  './css/geo-check.css',
+  './js/coordinate-convert.js'
 ];
 
 // CDN 域名白名单（这些资源缓存到专用 CDN_CACHE）

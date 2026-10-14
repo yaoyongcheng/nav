@@ -1,0 +1,358 @@
+/*
+ * main-9.4 / 定位检测浮层（Geolocation 可用性 + 坐标系）
+ * ============================================
+ * 独立 CSS，不污染 css/login.css / css/style.css。
+ * 结构与规范沿用 css/microphone.css / css/bluetooth.css，要点：
+ *
+ *  - 不用 100vh（iOS Safari 高度 bug），用 max-height: 80vh
+ *  - safe-area-inset-bottom 给内部容器，视觉中心不偏移
+ *  - 关闭走 display: none，彻底移出命中测试
+ *  - 浮层自身 transform 做滑入，不引入 rAF 循环
+ *  - 兼容 prefers-reduced-motion（关闭过渡动画）
+ *
+ * ⚠️ z-index 层级链（新加浮层必须排在这条链上，勿插队）：
+ *    location-queue-ui 9999 < pwa-install 9999/10000
+ *      < camera-capture 10001/10002 < app-launch 10004/10005
+ *      < app-launch toast 10006 < bluetooth 10007/10008
+ *      < microphone 10009/10010 < **geo-check 10011/10012**（链尾）
+ */
+
+/* ============ 遮罩 / 抽屉 ============ */
+
+.gc-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 10011;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.gc-mask.is-open {
+    display: block;
+    animation: gc-fade-in 200ms ease-out;
+}
+
+.gc-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    color: #1e293b;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+    z-index: 10012;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    max-height: 80vh;
+    max-height: calc(80vh - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+}
+
+.gc-sheet.is-open {
+    display: block;
+    animation: gc-slide-up 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.gc-sheet-inner {
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    max-height: inherit;
+}
+
+.gc-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 18px;
+    line-height: 44px;
+    text-align: center;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.gc-close:active {
+    background: rgba(15, 23, 42, 0.06);
+}
+
+/* ============ 文本 ============ */
+
+.gc-title {
+    margin: 0 36px 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.gc-hint {
+    margin: 0 0 14px 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.gc-hint-warn {
+    color: #b45309;
+}
+
+/* ============ 状态区（浮层视觉焦点 = 可用性结论）============ */
+
+.gc-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px 0;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.gc-status-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.gc-status-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.35;
+}
+
+.gc-status-ok {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.gc-status-ok .gc-status-text { color: #15803d; }
+
+.gc-status-no {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.gc-status-no .gc-status-text { color: #b91c1c; }
+
+.gc-status-warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+}
+
+.gc-status-warn .gc-status-text { color: #b45309; }
+
+.gc-status-wait {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.gc-status-wait .gc-status-text { color: #1d4ed8; }
+
+/* ============ 结果行（精度 / 耗时）============ */
+
+.gc-result {
+    margin: 0 0 12px 0;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.gc-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13.5px;
+    line-height: 1.9;
+    color: #64748b;
+}
+
+.gc-result-row b {
+    color: #334155;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* ============ 坐标卡（可长按选中）============ */
+
+.gc-coord {
+    margin: 0 0 10px 0;
+    padding: 12px 14px;
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.gc-coord-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.gc-coord-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    color: #0f172a;
+    letter-spacing: 0.2px;
+    /* 复制失效时用户可长按选中 */
+    -webkit-user-select: all;
+    user-select: all;
+    word-break: break-all;
+}
+
+/* ============ 环境详情表 ============ */
+
+.gc-meta {
+    margin: 0 0 14px 0;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.gc-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+    line-height: 1.9;
+    color: #64748b;
+}
+
+.gc-meta-row + .gc-meta-row {
+    border-top: 1px solid #e2e8f0;
+}
+
+.gc-meta-row b {
+    color: #334155;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-all;
+}
+
+.gc-ok { color: #15803d !important; }
+.gc-no { color: #b91c1c !important; }
+
+/* ============ 按钮（同时用于 <button> 与 <a>）============ */
+
+.gc-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 12px 0;
+}
+
+.gc-btn {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    /* <a> 复用同一套样式：去下划线、垂直居中 */
+    text-decoration: none;
+    line-height: 24px;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 150ms ease;
+}
+
+.gc-btn:active {
+    background: #eff6ff;
+}
+
+.gc-btn-primary {
+    background: #237CF3;
+    border-color: #237CF3;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.gc-btn-primary:active {
+    background: #1b64c9;
+}
+
+.gc-footnote {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* ============ 动画 ============ */
+
+@keyframes gc-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes gc-slide-up {
+    from { transform: translateY(24px); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gc-mask.is-open,
+    .gc-sheet.is-open {
+        animation: none;
+    }
+}
+
+/* ============ 响应式 ============ */
+
+@media (max-width: 359px) {
+    .gc-sheet-inner {
+        padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px)) 14px;
+    }
+
+    .gc-status {
+        padding: 13px 12px;
+        gap: 8px;
+    }
+
+    .gc-status-icon { font-size: 22px; }
+    .gc-status-text { font-size: 15.5px; }
+    .gc-coord-value { font-size: 13px; }
+}
+
+@media (min-width: 640px) {
+    .gc-sheet {
+        left: 50%;
+        right: auto;
+        bottom: 32px;
+        width: 480px;
+        transform: translateX(-50%);
+        border-radius: 16px;
+    }
+
+    .gc-sheet.is-open {
+        animation: gc-fade-in 220ms ease-out;
+    }
+}
