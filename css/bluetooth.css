@@ -1,0 +1,328 @@
+/*
+ * main-9.4 / 蓝牙连接浮层（Web Bluetooth）
+ * ============================================
+ * 独立 CSS，不污染 css/login.css / css/style.css。
+ * 结构与规范沿用 css/app-launch.css（该文件头部即项目浮层规范），要点：
+ *
+ *  - 不用 100vh（iOS Safari 高度 bug），用 max-height: 80vh
+ *  - safe-area-inset-bottom 给内部容器，视觉中心不偏移
+ *  - 关闭走 display: none，彻底移出命中测试
+ *  - 浮层自身 transform 做滑入，不引入 rAF 循环
+ *  - 兼容 prefers-reduced-motion（关闭过渡动画）
+ *
+ * ⚠️ z-index 层级链（新加浮层必须排在这条链上，勿插队）：
+ *    location-queue-ui 9999 < pwa-install 9999/10000
+ *      < camera-capture 10001/10002 < app-launch 10004/10005
+ *      < app-launch toast 10006 < **bluetooth 10007/10008**（链尾）
+ */
+
+/* ============ 遮罩 / 抽屉 ============ */
+
+.bt-mask {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 10007;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bt-mask.is-open {
+    display: block;
+    animation: bt-fade-in 200ms ease-out;
+}
+
+.bt-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff;
+    color: #1e293b;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+    z-index: 10008;
+    display: none;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    max-height: 80vh;
+    max-height: calc(80vh - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+}
+
+.bt-sheet.is-open {
+    display: block;
+    animation: bt-slide-up 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.bt-sheet-inner {
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)) 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    max-height: inherit;
+}
+
+.bt-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 18px;
+    line-height: 44px;
+    text-align: center;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bt-close:active {
+    background: rgba(15, 23, 42, 0.06);
+}
+
+/* ============ 文本 ============ */
+
+.bt-title {
+    margin: 0 36px 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.bt-hint {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.bt-hint-warn {
+    color: #b45309;
+}
+
+/* ============ 状态区（浮层视觉焦点）============ */
+
+.bt-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px 0;
+    padding: 16px 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.bt-status-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex: 0 0 auto;
+}
+
+.bt-status-text {
+    font-size: 17px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.35;
+}
+
+.bt-status-ok {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.bt-status-ok .bt-status-text {
+    color: #15803d;
+}
+
+.bt-status-no {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.bt-status-no .bt-status-text {
+    color: #b91c1c;
+}
+
+.bt-status-wait {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.bt-status-wait .bt-status-text {
+    color: #1d4ed8;
+}
+
+/* ============ 设备信息卡 ============ */
+
+.bt-device {
+    margin: 0 0 14px 0;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.bt-device-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+.bt-device-id {
+    margin-top: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #94a3b8;
+    word-break: break-all;
+    -webkit-user-select: all;
+    user-select: all;
+}
+
+/* ============ 环境详情表 ============ */
+
+.bt-meta {
+    margin: 0 0 16px 0;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.bt-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+    line-height: 1.9;
+    color: #64748b;
+}
+
+.bt-meta-row + .bt-meta-row {
+    border-top: 1px solid #e2e8f0;
+}
+
+.bt-meta-row b {
+    color: #334155;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-all;
+}
+
+.bt-ok { color: #15803d !important; }
+.bt-no { color: #b91c1c !important; }
+
+/* ============ 按钮 ============ */
+
+.bt-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 12px 0;
+}
+
+.bt-btn {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 150ms ease;
+}
+
+.bt-btn:active {
+    background: #eff6ff;
+}
+
+.bt-btn-primary {
+    background: #237CF3;
+    border-color: #237CF3;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.bt-btn-primary:active {
+    background: #1b64c9;
+}
+
+.bt-footnote {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+/* ============ 动画 ============ */
+
+@keyframes bt-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes bt-slide-up {
+    from { transform: translateY(24px); opacity: 0.6; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bt-mask.is-open,
+    .bt-sheet.is-open {
+        animation: none;
+    }
+}
+
+/* ============ 响应式 ============ */
+
+/* 窄屏：缩小状态图标与内边距，避免标题折行过多 */
+@media (max-width: 359px) {
+    .bt-sheet-inner {
+        padding: 16px 14px calc(16px + env(safe-area-inset-bottom, 0px)) 14px;
+    }
+
+    .bt-status {
+        padding: 13px 12px;
+        gap: 8px;
+    }
+
+    .bt-status-icon { font-size: 22px; }
+    .bt-status-text { font-size: 15.5px; }
+}
+
+/* 平板/桌面：居中 480px（照 app-launch.css:300-313） */
+@media (min-width: 640px) {
+    .bt-sheet {
+        left: 50%;
+        right: auto;
+        bottom: 32px;
+        width: 480px;
+        transform: translateX(-50%);
+        border-radius: 16px;
+    }
+
+    .bt-sheet.is-open {
+        animation: bt-fade-in 220ms ease-out;
+    }
+}

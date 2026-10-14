@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>蓝牙能力检测 — Web Bluetooth</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 16px 14px calc(24px + env(safe-area-inset-bottom));
+    background: #0d1117; color: #e6edf3;
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  h1 { font-size: 17px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: #8b949e; font-size: 12.5px; margin-bottom: 14px; }
+
+  /* 结论徽章：整页最重要信息，放大便于截图 */
+  #verdict {
+    border-radius: 12px; padding: 16px 16px; margin-bottom: 16px;
+    border: 2px solid #30363d; background: #161b22;
+    text-align: center;
+  }
+  #verdict .big { font-size: 26px; font-weight: 700; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+  #verdict .note { font-size: 13px; color: #8b949e; }
+  .v-ok    { border-color: #238636 !important; } .v-ok .big    { color: #3fb950; }
+  .v-no    { border-color: #da3633 !important; } .v-no .big    { color: #f85149; }
+  .v-warn  { border-color: #9e6a03 !important; } .v-warn .big  { color: #d29922; }
+  .v-wait .big { color: #8b949e; }
+
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .card h2 { font-size: 13px; margin: 0 0 10px; color: #8b949e; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
+
+  .row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #21262d; font-size: 13.5px; }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: #8b949e; flex: 0 0 auto; }
+  .row .v { text-align: right; word-break: break-all; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .ok   { color: #3fb950; } .no { color: #f85149; } .warn { color: #d29922; } .dim { color: #6e7681; }
+
+  button {
+    width: 100%; padding: 14px; border-radius: 10px; border: none;
+    background: #238636; color: #fff; font-size: 15.5px; font-weight: 600;
+    margin-bottom: 10px; cursor: pointer;
+  }
+  button:active { background: #2ea043; }
+  button.ghost { background: #21262d; border: 1px solid #30363d; color: #e6edf3; font-weight: 500; font-size: 14px; }
+  button:disabled { opacity: .5; }
+
+  #log {
+    background: #010409; border: 1px solid #30363d; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11.5px; line-height: 1.5; color: #8b949e;
+    white-space: pre-wrap; word-break: break-all;
+    max-height: 240px; overflow-y: auto; margin-top: 4px;
+  }
+  .hint { font-size: 12.5px; color: #8b949e; margin: 10px 0 0; }
+  .hint b { color: #d29922; }
+  .steps { font-size: 13px; color: #8b949e; padding-left: 18px; margin: 8px 0 0; }
+  .steps li { margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<h1>蓝牙能力检测</h1>
+<div class="sub">Web Bluetooth (navigator.bluetooth) 真机可用性判定</div>
+
+<div id="verdict" class="v-wait">
+  <span class="big">检测中…</span>
+  <div class="note">正在读取 API 状态</div>
+</div>
+
+<div class="card">
+  <h2>环境</h2>
+  <div class="row"><span class="k">浏览器</span><span class="v" id="e-ua">—</span></div>
+  <div class="row"><span class="k">运行模式</span><span class="v" id="e-mode">—</span></div>
+  <div class="row"><span class="k">安全上下文</span><span class="v" id="e-secure">—</span></div>
+  <div class="row"><span class="k">系统平台</span><span class="v" id="e-plat">—</span></div>
+</div>
+
+<div class="card">
+  <h2>API 检测</h2>
+  <div class="row"><span class="k">navigator.bluetooth 存在</span><span class="v" id="c-api">—</span></div>
+  <div class="row"><span class="k">getAvailability()</span><span class="v" id="c-avail">—</span></div>
+  <div class="row"><span class="k">requestDevice 函数</span><span class="v" id="c-req">—</span></div>
+  <div class="row"><span class="k">getDevices() 已授权设备</span><span class="v" id="c-getdev">—</span></div>
+</div>
+
+<div class="card">
+  <h2>实测配对（关键一步）</h2>
+  <button id="btn-scan">点击测试：调起蓝牙设备选择器</button>
+  <button id="btn-copy" class="ghost">复制检测结果</button>
+  <div id="log">等待测试…</div>
+  <p class="hint">
+    判读：<b>弹出设备选择器</b> = 可用；<b>无反应无报错超过 3 秒</b> = 静默失败（该浏览器不可用）。
+  </p>
+</div>
+
+<div class="card">
+  <h2>怎么测才有意义</h2>
+  <ol class="steps">
+    <li>先用<b>系统自带浏览器</b>打开本页 → 测一次</li>
+    <li>把本页<b>「添加到主屏幕」</b>，再从桌面图标打开 → 再测一次</li>
+    <li>两次结果可能不同，都要记录（standalone 模式有静默失败的已知案例）</li>
+    <li>换一台 iPhone 再打开一次，对照 iOS 的结论</li>
+  </ol>
+</div>
+
+<script>
+'use strict';
+(function () {
+  // 顶层异常守卫：任何一步失败都不能让整页白屏
+  var $ = function (id) { return document.getElementById(id); };
+  var set = function (id, text, cls) {
+    var el = $(id); if (!el) return;
+    el.textContent = text;
+    el.className = 'v' + (cls ? ' ' + cls : '');
+  };
+
+  function log(msg) {
+    var el = $('log');
+    if (!el) return;
+    if (el.textContent === '等待测试…') el.textContent = '';
+    var t = new Date();
+    var hh = String(t.getHours()).padStart(2, '0');
+    var mm = String(t.getMinutes()).padStart(2, '0');
+    var ss = String(t.getSeconds()).padStart(2, '0');
+    el.textContent += '[' + hh + ':' + mm + ':' + ss + '] ' + msg + '\n';
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function verdict(kind, big, note) {
+    var v = $('verdict');
+    if (!v) return;
+    v.className = 'v-' + kind;
+    v.innerHTML = '<span class="big">' + big + '</span><div class="note">' + note + '</div>';
+  }
+
+  // 厂商/平台粗识别（仅用于展示，不参与判定）
+  function detectVendor(ua) {
+    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iOS / iPadOS (WebKit)';
+    if (/HarmonyOS|ArkWeb/i.test(ua)) return 'HarmonyOS (华为/鸿蒙)';
+    if (/HuaweiBrowser|Huawei/i.test(ua)) return 'Huawei Browser';
+    if (/MiuiBrowser|XiaoMi|MiBrowser/i.test(ua)) return '小米浏览器';
+    if (/VivoBrowser|vivo/i.test(ua)) return 'vivo 浏览器';
+    if (/OppoBrowser|OPPO|HeyTap/i.test(ua)) return 'OPPO 浏览器';
+    if (/MicroMessenger/i.test(ua)) return '微信内置浏览器';
+    if (/QQBrowser/i.test(ua)) return 'QQ 浏览器';
+    if (/UCBrowser|UCWEB/i.test(ua)) return 'UC 浏览器';
+    if (/baidubrowser|BIDUBrowser/i.test(ua)) return '百度浏览器';
+    if (/EdgA?\//.test(ua)) return 'Edge';
+    if (/Chrome\//.test(ua)) return 'Chrome (Chromium)';
+    if (/Safari\//.test(ua)) return 'Safari (WebKit)';
+    return '未能识别';
+  }
+
+  function isStandalone() {
+    try {
+      if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
+      if (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+      if (navigator.standalone === true) return true; // iOS Safari 专有
+    } catch (e) {}
+    return false;
+  }
+
+  // ---------- 环境 ----------
+  var ua = navigator.userAgent || '';
+  var standalone = isStandalone();
+  var secure = window.isSecureContext === true;
+
+  try {
+    set('e-ua', ua.length > 78 ? ua.slice(0, 78) + '…' : ua);
+    set('e-mode', standalone ? 'standalone (已装到桌面)' : '浏览器标签页', standalone ? 'ok' : 'dim');
+    set('e-secure', secure ? 'HTTPS ✅' : '非 HTTPS ❌', secure ? 'ok' : 'no');
+    set('e-plat', detectVendor(ua), 'dim');
+  } catch (e) { log('环境读取异常: ' + e.message); }
+
+  // ---------- API 检测 ----------
+  var hasBT = false;
+  try { hasBT = ('bluetooth' in navigator) && !!navigator.bluetooth; } catch (e) { hasBT = false; }
+  set('c-api', hasBT ? '存在 ✅' : '不存在 ❌', hasBT ? 'ok' : 'no');
+
+  if (!hasBT) {
+    set('c-avail', '— 无法调用', 'dim');
+    set('c-req', '— 无法调用', 'dim');
+    set('c-getdev', '— 无法调用', 'dim');
+    var isIOS = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    verdict('no', '不支持 ❌',
+      isIOS ? 'iOS 全系浏览器均为 WebKit，未实现 Web Bluetooth'
+            : '该浏览器未暴露 navigator.bluetooth（可能为 WebView 内核或已被厂商裁剪）');
+    $('btn-scan').disabled = true;
+    log('navigator.bluetooth 不存在，无法进行配对实测。');
+    log('判定：此环境无法使用 Web Bluetooth。');
+  } else {
+    verdict('warn', 'API 存在 ⚠️', '还需点下方按钮完成实测配对');
+    log('navigator.bluetooth 存在，继续检测…');
+
+    // getAvailability：异步，可能 reject，必须兜底
+    try {
+      navigator.bluetooth.getAvailability().then(function (ok) {
+        set('c-avail', ok ? '蓝牙可用 ✅' : '蓝牙不可用（未开启/无适配器）', ok ? 'ok' : 'warn');
+        log('getAvailability() => ' + ok);
+      }).catch(function (err) {
+        set('c-avail', '调用异常: ' + (err && err.name || 'unknown'), 'warn');
+        log('getAvailability() 异常: ' + (err && err.name) + ' / ' + (err && err.message));
+      });
+    } catch (e) {
+      set('c-avail', '同步抛错', 'warn');
+      log('getAvailability() 同步抛错: ' + e.message);
+    }
+
+    set('c-req', typeof navigator.bluetooth.requestDevice === 'function' ? '可用 ✅' : '缺失 ❌',
+        typeof navigator.bluetooth.requestDevice === 'function' ? 'ok' : 'no');
+
+    if (typeof navigator.bluetooth.getDevices === 'function') {
+      try {
+        navigator.bluetooth.getDevices().then(function (ds) {
+          set('c-getdev', '支持（' + ds.length + ' 个已授权）', 'ok');
+        }).catch(function (err) {
+          set('c-getdev', '存在但调用失败: ' + (err && err.name || '?'), 'warn');
+        });
+      } catch (e) { set('c-getdev', '同步抛错', 'warn'); }
+    } else {
+      set('c-getdev', '不支持（Chrome 122 以下）', 'dim');
+    }
+  }
+
+  // ---------- 实测配对：静默失败检测 ----------
+  var lostFocus = false;
+  var settled = false;
+
+  try {
+    window.addEventListener('blur', function () { lostFocus = true; });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) lostFocus = true;
+    });
+  } catch (e) {}
+
+  var btn = $('btn-scan');
+  if (btn) {
+    btn.addEventListener('click', function () {
+      lostFocus = false;
+      settled = false;
+      btn.disabled = true;
+      btn.textContent = '等待设备选择器…';
+      log('调用 requestDevice({acceptAllDevices:true})…');
+      log('（必须由这次点击触发 —— 用户手势是硬要求）');
+
+      var timer = setTimeout(function () {
+        if (!settled && !lostFocus) {
+          // 既没弹窗、也没报错 → 这正是已知的 standalone 静默失败
+          settled = true;
+          verdict('no', '静默失败 ❌', '3 秒内未弹出设备选择器，也未返回错误');
+          log('⚠️ 超时 3s：未失焦、未报错 → 疑似静默失败。');
+          log('缓解：到 chrome://settings/content 检查并重置「附近设备」权限后重试。');
+          btn.disabled = false;
+          btn.textContent = '重试一次';
+        }
+      }, 3000);
+
+      try {
+        navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+          .then(function (dev) {
+            settled = true;
+            clearTimeout(timer);
+            verdict('ok', '可用 ✅', '已选中设备：' + (dev && dev.name || '(未命名)'));
+            log('✅ 成功选中设备: ' + (dev && dev.name) + ' / id=' + (dev && dev.id));
+            log('结论：此环境 Web Bluetooth 可正常调用。');
+            btn.disabled = false;
+            btn.textContent = '再测一次';
+          })
+          .catch(function (err) {
+            settled = true;
+            clearTimeout(timer);
+            var n = (err && err.name) || 'unknown';
+            var m = (err && err.message) || '';
+            log('返回错误: ' + n + ' / ' + m);
+            if (n === 'NotFoundError' || n === 'NotFoundError: User cancelled') {
+              // 弹窗出现过，用户取消 —— 这恰恰证明 API 可用
+              verdict('ok', '可用 ✅', '设备选择器已弹出（你取消了选择）');
+              log('✅ NotFoundError = 选择器弹出后被取消 → API 实际可用。');
+            } else if (n === 'SecurityError') {
+              verdict('warn', '被拦截 ⚠️', 'SecurityError：需 HTTPS 或权限策略限制');
+            } else if (n === 'NotSupportedError') {
+              verdict('no', '不支持 ❌', 'NotSupportedError：浏览器未实现该能力');
+            } else if (n === 'InvalidStateError') {
+              verdict('warn', '状态异常 ⚠️', 'InvalidStateError：可能已有弹窗未关闭');
+            } else {
+              verdict('warn', '有异常 ⚠️', n + ' — 请查看下方日志');
+            }
+            btn.disabled = false;
+            btn.textContent = '再测一次';
+          });
+      } catch (e) {
+        settled = true;
+        clearTimeout(timer);
+        verdict('no', '调用抛错 ❌', e.name + ': ' + e.message);
+        log('同步抛错: ' + e.name + ' / ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '再测一次';
+      }
+    });
+  }
+
+  // ---------- 复制结果（便于反馈） ----------
+  var cp = $('btn-copy');
+  if (cp) {
+    cp.addEventListener('click', function () {
+      var rows = [];
+      ['e-ua', 'e-mode', 'e-secure', 'e-plat', 'c-api', 'c-avail', 'c-req', 'c-getdev'].forEach(function (id) {
+        var el = $(id); if (el) rows.push(id + ': ' + el.textContent);
+      });
+      var v = $('verdict');
+      var text = '【蓝牙能力检测】\n' +
+        '结论: ' + (v ? v.textContent.trim() : '?') + '\n' +
+        rows.join('\n') + '\nUA(full): ' + ua;
+      var done = function () { cp.textContent = '已复制 ✓'; setTimeout(function () { cp.textContent = '复制检测结果'; }, 1500); };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(function () { fallback(text, done); });
+        } else { fallback(text, done); }
+      } catch (e) { fallback(text, done); }
+
+      function fallback(t, cb) {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta); cb();
+        } catch (e2) { log('复制失败，请手动截图'); }
+      }
+    });
+  }
+
+  log('环境: ' + detectVendor(ua) + ' | 模式: ' + (standalone ? 'standalone' : '浏览器') + ' | HTTPS: ' + secure);
+})();
+</script>
+</body>
+</html>

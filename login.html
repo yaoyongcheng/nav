@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="css/location-queue-ui.css?v=v1618">
     <link rel="stylesheet" href="css/camera-capture.css?v=v1622">
     <link rel="stylesheet" href="css/app-launch.css?v=v1623">
+    <link rel="stylesheet" href="css/bluetooth.css?v=v1627">
 
     <!-- ⚠️ TEMP-SHIELD-20260926 (reapplied #2): 临时屏蔽首页扫码登录按钮（用户测试用）
          第 3 次应用：2026-09-26 复测时再次刷新触发 bump-version
@@ -107,6 +108,14 @@
                 <button type="button" class="quick-action-btn" id="qa-camera" aria-label="拍照录像">
                     <span class="qa-icon">📷</span>
                     <span class="qa-label">拍照录像</span>
+                </button>
+                <!-- v1.6.23：新增蓝牙入口（js/bluetooth.js 渲染连接浮层）
+                     ⚠️ 平台能力真相：iOS 全系 + 华为/鸿蒙 + 微信内置均无法调用
+                     网页蓝牙（WebKit/ArkWeb/WebView 未实现），模块内做能力检测
+                     后给出准确原因与引导，不做假装适配。详见 js/bluetooth.js 头部 -->
+                <button type="button" class="quick-action-btn" id="qa-bluetooth" aria-label="蓝牙">
+                    <span class="qa-icon">📶</span>
+                    <span class="qa-label">蓝牙</span>
                 </button>
             </div>
         </div>
@@ -337,6 +346,10 @@
     <script src="js/camera-capture.js?v=v1622"></script>
     <!-- 外部 App 唤起（v1.6.22：高德 / 应用商店，5 机型适配；必须在 login.js 之前） -->
     <script src="js/app-launch.js?v=v1625"></script>
-    <script src="js/login.js"></script>
+    <script src="js/bluetooth.js?v=v1627"></script>
+    <!-- ⚠️ login.js 必须带 ?v=，否则命中 SW 的 PRECACHE 条目走 cache-first，
+         永远返回旧版（v1.6.23 加蓝牙入口时实测踩到：无参数请求返回 66203B 旧版，
+         带参数返回 66766B 新版）。同 js/camera-capture.js / js/app-launch.js 的约定。 -->
+    <script src="js/login.js?v=v1626"></script>
 </body>
 </html>

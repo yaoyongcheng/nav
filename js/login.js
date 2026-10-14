@@ -2030,6 +2030,7 @@ function initQuickActions() {
     const btnQueue = document.getElementById('qa-offline-queue');
     const btnCamera = document.getElementById('qa-camera');
     const btnLaunch = document.getElementById('qa-app-launch');
+    const btnBluetooth = document.getElementById('qa-bluetooth');
 
     if (btnForm) {
         btnForm.addEventListener('click', function() {
@@ -2084,6 +2085,19 @@ function initQuickActions() {
                 window.AppLaunch.open();
             } else {
                 console.warn('[quick-actions] AppLaunch API 未就绪');
+            }
+        });
+    }
+
+    // v1.6.23：蓝牙入口（Web Bluetooth 连接浮层）。
+    // ⚠️ 同 #qa-camera：只在此处绑定一次，js/bluetooth.js 内部不重复绑定 click。
+    //    该模块自带能力检测，平台不支持时浮层内给出准确原因，不在此处拦截。
+    if (btnBluetooth) {
+        btnBluetooth.addEventListener('click', function() {
+            if (window.BluetoothPanel && typeof window.BluetoothPanel.open === 'function') {
+                window.BluetoothPanel.open();
+            } else {
+                console.warn('[quick-actions] BluetoothPanel API 未就绪');
             }
         });
     }
